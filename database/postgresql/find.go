@@ -17,8 +17,9 @@ func (d *Database) FindOneByID(ctx context.Context, record dbcommon.Record, opti
 	if prepareName != "" {
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-
-			stmt, err := d.conn.PrepareContext(ctx, generateFindOneByIDQuery(record.TableName(), record.SelectColumns()))
+			query := generateFindOneByIDQuery(record.TableName(), record.SelectColumns())
+			logger.Debug(ctx, "Database::PostgreSQL::FindOneByID::Query:%s: %s", prepareName, query)
+			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
 				logger.Error(ctx, "Database::PostgreSQL::FindOneByID::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
 				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
@@ -48,7 +49,7 @@ func (d *Database) FindOneByFilter(ctx context.Context, record dbcommon.Record, 
 	if prepareName != "" {
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-			query, values := generateFindOneByFilterQuery(record.TableName(), record.SelectColumns(), filter)
+			query, values := generateFindQuery(record.TableName(), record.SelectColumns(), filter)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
 				logger.Error(ctx, "Database::PostgreSQL::FindOneByFilter::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
@@ -57,9 +58,13 @@ func (d *Database) FindOneByFilter(ctx context.Context, record dbcommon.Record, 
 			d.preparedStatements[prepareName] = stmt
 			// execute the statement
 			row = stmt.QueryRowContext(ctx, values...)
+		} else {
+			// execute the statement
+			_, values := parseFilter(filter)
+			row = d.preparedStatements[prepareName].QueryRowContext(ctx, values...)
 		}
 	} else {
-		query, values := generateFindOneByFilterQuery(record.TableName(), record.SelectColumns(), filter)
+		query, values := generateFindQuery(record.TableName(), record.SelectColumns(), filter)
 		row = d.conn.QueryRowContext(ctx, query, values...)
 	}
 	if row.Err() != nil {
@@ -83,7 +88,7 @@ func (d *Database) FindAll(ctx context.Context, record dbcommon.Records, filter 
 	if prepareName != "" {
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-			query, values = generateFindAllQuery(record.TableName(), record.SelectColumns(), filter)
+			query, values = generateFindQuery(record.TableName(), record.SelectColumns(), filter)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
 				logger.Error(ctx, "Database::PostgreSQL::FindAll::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
@@ -94,7 +99,7 @@ func (d *Database) FindAll(ctx context.Context, record dbcommon.Records, filter 
 		// execute the statement
 		rows, err = d.preparedStatements[prepareName].QueryContext(ctx, values...)
 	} else {
-		query, values = generateFindAllQuery(record.TableName(), record.SelectColumns(), filter)
+		query, values = generateFindQuery(record.TableName(), record.SelectColumns(), filter)
 		rows, err = d.conn.QueryContext(ctx, query, values...)
 	}
 	if err != nil {
@@ -119,50 +124,38 @@ func generateFindOneByIDQuery(tableName string, columns []string) string {
 }
 
 /*
- helper function to generate query for find one by filter
-*/
-
-func generateFindOneByFilterQuery(tableName string, columns []string, filter dbcommon.Filter) (string, []interface{}) {
-	query := "SELECT " + strings.Join(columns, ", ") + " FROM " + tableName
-	var values []interface{}
-	if filter != nil {
-		valueNumber := 1
-		condition, condValues := parseCondition(filter.Condition(), &valueNumber)
-		if condition != "" {
-			query += " WHERE " + condition
-			values = append(values, condValues...)
-		}
-	}
-	return query, values
-}
-
-/*
 
 helper function to generate query for find all
 
 */
 
-func generateFindAllQuery(tableName string, columns []string, filter dbcommon.Filter) (string, []interface{}) {
+func generateFindQuery(tableName string, columns []string, filter dbcommon.Filter) (string, []interface{}) {
 	query := "SELECT " + strings.Join(columns, ", ") + " FROM " + tableName
+	condition, values := parseFilter(filter)
+	return query + condition, values
+}
+
+func parseFilter(filter dbcommon.Filter) (string, []interface{}) {
 	var values []interface{}
+	var condition string
 	valueNumber := 1
 	if filter != nil {
 		condition, condValues := parseCondition(filter.Condition(), &valueNumber)
 		if condition != "" {
-			query += " WHERE " + condition
+			condition += " WHERE " + condition
 			values = append(values, condValues...)
 		}
-	}
-	query += parseSort(filter.Sorts())
-	if filter.Offset() > 0 {
-		query += fmt.Sprintf(" OFFSET $%d", valueNumber)
+
+		condition += parseSort(filter.Sorts())
+		condition += fmt.Sprintf(" OFFSET $%d", valueNumber)
 		values = append(values, filter.Offset())
 		valueNumber++
+
+		if filter.Limit() > 0 {
+			condition += fmt.Sprintf(" LIMIT $%d", valueNumber)
+			values = append(values, filter.Limit())
+			valueNumber++
+		}
 	}
-	if filter.Limit() > 0 {
-		query += fmt.Sprintf(" LIMIT $%d", valueNumber)
-		values = append(values, filter.Limit())
-		valueNumber++
-	}
-	return query, values
+	return condition, values
 }

@@ -20,7 +20,9 @@ func (d *Database) UpdateByID(ctx context.Context, record dbcommon.Record, optio
 		stmt, ok := d.preparedStatements[prepareName]
 		if !ok {
 			// prepare statement
-			stmt, err = d.conn.PrepareContext(ctx, generateUpdateByIDQuery(record.TableName(), columns))
+			query := generateUpdateByIDQuery(record.TableName(), columns)
+			logger.Debug(ctx, "Database::PostgreSQL::UpdateByID::Query:%s: %s", prepareName, query)
+			stmt, err = d.conn.PrepareContext(ctx, query)
 			if err != nil {
 				logger.Error(ctx, "Database::PostgreSQL::UpdateByID::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
 				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
