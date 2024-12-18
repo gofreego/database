@@ -2,8 +2,8 @@ package postgresql
 
 import (
 	"context"
-	"database/database/dbcommon"
 	"fmt"
+	"openauth/database/database/dbcommon"
 )
 
 func (d *Database) Aggregate(ctx context.Context, record dbcommon.AggregationRecords, filter dbcommon.Filter, options ...any) error {

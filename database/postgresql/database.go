@@ -3,6 +3,7 @@ package postgresql
 import (
 	"context"
 	"database/sql"
+	"openauth/database/database/dberrors"
 )
 
 type Database struct {
@@ -11,6 +12,9 @@ type Database struct {
 }
 
 func NewDatabase(ctx context.Context, conf *Config) (*Database, error) {
+	if conf == nil {
+		return nil, dberrors.NewError(dberrors.ErrInvalidConfig, "No config provided for Database.PostgreSQL", nil)
+	}
 	conn, err := newConnection(ctx, conf)
 	if err != nil {
 		return nil, err

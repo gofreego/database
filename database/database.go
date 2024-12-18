@@ -2,10 +2,10 @@ package database
 
 import (
 	"context"
-	"database/database/dbcommon"
-	"database/database/dberrors"
-	"database/database/postgresql"
 	"fmt"
+	"openauth/database/database/dbcommon"
+	"openauth/database/database/dberrors"
+	"openauth/database/database/postgresql"
 
 	"github.com/gofreego/goutils/logger"
 )
@@ -30,9 +30,9 @@ const (
 )
 
 type Config struct {
-	Name        string
-	Logger      logger.Config
-	PostgresSQL *postgresql.Config
+	Name       string
+	Logger     logger.Config
+	PostgreSQL *postgresql.Config
 }
 
 func withDefaultValues(loggerConf logger.Config) logger.Config {
@@ -48,13 +48,12 @@ func withDefaultValues(loggerConf logger.Config) logger.Config {
 	return loggerConf
 }
 
-func NewDatabase(ctx context.Context, config Config) (Database, error) {
+func NewDatabase(ctx context.Context, config *Config) (Database, error) {
 	withDefaultValues(config.Logger).InitiateLogger()
 	switch config.Name {
 	case PostgreSQL:
-		return postgresql.NewDatabase(ctx, config.PostgresSQL)
+		return postgresql.NewDatabase(ctx, config.PostgreSQL)
 	default:
-		logger.Error(ctx, "Database::NewDatabase failed, Err: invalid database name: %s, Expected", config.Name, PostgreSQL)
-		return nil, dberrors.NewError(dberrors.ErrInvalidConfig, "Invalid Database Name", fmt.Errorf("invalid database name: %s, Expected: %s", config.Name, PostgreSQL))
+		return nil, dberrors.NewError(dberrors.ErrInvalidConfig, "Invalid Database Name", fmt.Errorf("invalid database name: `%s`, Expected: `%s`", config.Name, PostgreSQL))
 	}
 }

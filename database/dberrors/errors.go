@@ -39,7 +39,11 @@ func NewError(errType Code, message string, err error) error {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("Database Error:: %s:: Code: %d, Err: %s", e.message, e.code, e.err.Error())
+	if e.err == nil {
+		return fmt.Sprintf("Database Error:: %s:: Code: %d", e.message, e.code)
+	} else {
+		return fmt.Sprintf("Database Error:: %s:: Code: %d, Err: %s", e.message, e.code, e.err.Error())
+	}
 }
 
 func IsRecordNotFound(err error) bool {

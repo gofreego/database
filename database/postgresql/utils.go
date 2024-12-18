@@ -1,8 +1,8 @@
 package postgresql
 
 import (
-	"database/database/dbcommon"
 	"fmt"
+	"openauth/database/database/dbcommon"
 	"strconv"
 	"strings"
 )
