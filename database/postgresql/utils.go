@@ -26,7 +26,7 @@ func parseCondition(c *dbcommon.Condition, valueNumber *int) (string, []interfac
 	}
 
 	if c.Operator == dbcommon.In || c.Operator == dbcommon.NotIn {
-		return fmt.Sprintf("%s %s $%d", c.Column, operators[c.Operator], getValuesMarks(len(c.Values), valueNumber)), c.Values
+		return fmt.Sprintf("%s %s %s", c.Column, operators[c.Operator], getValuesMarks(len(c.Values), valueNumber)), c.Values
 	}
 	*valueNumber++
 	return fmt.Sprintf("%s %s $%d", c.Column, operators[c.Operator], *valueNumber-1), []interface{}{c.Value}
