@@ -89,6 +89,7 @@ func (d *Database) FindAll(ctx context.Context, record dbcommon.Records, filter 
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
 			query, values = generateFindQuery(record.TableName(), record.SelectColumns(), filter)
+			logger.Debug(ctx, "Database::PostgreSQL::FindAll::Query:%s: %s", prepareName, query)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
 				logger.Error(ctx, "Database::PostgreSQL::FindAll::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
@@ -100,6 +101,7 @@ func (d *Database) FindAll(ctx context.Context, record dbcommon.Records, filter 
 		rows, err = d.preparedStatements[prepareName].QueryContext(ctx, values...)
 	} else {
 		query, values = generateFindQuery(record.TableName(), record.SelectColumns(), filter)
+		logger.Debug(ctx, "Database::PostgreSQL::FindAll::Query: %s, values: %v", query, values)
 		rows, err = d.conn.QueryContext(ctx, query, values...)
 	}
 	if err != nil {
@@ -132,30 +134,29 @@ helper function to generate query for find all
 func generateFindQuery(tableName string, columns []string, filter dbcommon.Filter) (string, []interface{}) {
 	query := "SELECT " + strings.Join(columns, ", ") + " FROM " + tableName
 	condition, values := parseFilter(filter)
+	logger.Debug(context.Background(), "%s", condition)
 	return query + condition, values
 }
 
 func parseFilter(filter dbcommon.Filter) (string, []interface{}) {
-	var values []interface{}
-	var condition string
 	valueNumber := 1
 	if filter != nil {
 		condition, condValues := parseCondition(filter.Condition(), &valueNumber)
 		if condition != "" {
-			condition += " WHERE " + condition
-			values = append(values, condValues...)
+			condition = " WHERE " + condition
 		}
 
 		condition += parseSort(filter.Sorts())
 		condition += fmt.Sprintf(" OFFSET $%d", valueNumber)
-		values = append(values, filter.Offset())
+		condValues = append(condValues, filter.Offset())
 		valueNumber++
 
 		if filter.Limit() > 0 {
 			condition += fmt.Sprintf(" LIMIT $%d", valueNumber)
-			values = append(values, filter.Limit())
+			condValues = append(condValues, filter.Limit())
 			valueNumber++
 		}
+		return condition, condValues
 	}
-	return condition, values
+	return "", nil
 }
