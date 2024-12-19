@@ -134,7 +134,6 @@ helper function to generate query for find all
 func generateFindQuery(tableName string, columns []string, filter dbcommon.Filter) (string, []interface{}) {
 	query := "SELECT " + strings.Join(columns, ", ") + " FROM " + tableName
 	condition, values := parseFilter(filter)
-	logger.Debug(context.Background(), "%s", condition)
 	return query + condition, values
 }
 

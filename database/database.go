@@ -17,6 +17,7 @@ type Database interface {
 	UpdateByID(ctx context.Context, record dbcommon.Record, options ...any) error
 	UpdateByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) (int64, error)
 	DeleteByID(ctx context.Context, record dbcommon.Record, options ...any) error
+	SoftDeleteByID(ctx context.Context, record dbcommon.Record, options ...any) error
 	DeleteByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) (int64, error)
 	FindOneByID(ctx context.Context, record dbcommon.Record, options ...any) error
 	FindOneByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) error

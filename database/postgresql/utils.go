@@ -8,17 +8,17 @@ import (
 )
 
 var operators = map[dbcommon.Operator]string{
-	dbcommon.Equal:              " = ",
-	dbcommon.NotEqual:           " != ",
-	dbcommon.LessThan:           " < ",
-	dbcommon.LessThanOrEqual:    " <= ",
-	dbcommon.GreaterThan:        " > ",
-	dbcommon.GreaterThanOrEqual: " >= ",
-	dbcommon.Like:               " LIKE ",
-	dbcommon.In:                 " IN ",
-	dbcommon.NotIn:              " NOT IN ",
-	dbcommon.OR:                 " OR ",
-	dbcommon.AND:                " AND ",
+	dbcommon.EQ:    " = ",
+	dbcommon.NEQ:   " != ",
+	dbcommon.LT:    " < ",
+	dbcommon.LTE:   " <= ",
+	dbcommon.GT:    " > ",
+	dbcommon.GTE:   " >= ",
+	dbcommon.Like:  " LIKE ",
+	dbcommon.In:    " IN ",
+	dbcommon.NotIn: " NOT IN ",
+	dbcommon.OR:    " OR ",
+	dbcommon.AND:   " AND ",
 }
 
 func parseCondition(c *dbcommon.Condition, valueNumber *int) (string, []interface{}) {
