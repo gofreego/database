@@ -16,7 +16,7 @@ helper function to generate the query for aggregation
 
 */
 
-func generateAggregationQuery(tableName string, aggregationColumns []dbcommon.AggregationColumn, filter dbcommon.Filter) (string, []interface{}) {
+func generateAggregationQuery(tableName string, aggregationColumns []dbcommon.AggregationColumn, filter dbcommon.Aggregator) (string, []interface{}) {
 	query := "SELECT " + parseAggregationColumns(aggregationColumns) + " FROM " + tableName
 	var values []interface{}
 	valueNumber := 1

@@ -20,4 +20,17 @@ type AggregationColumn struct {
 
 type AggregationRecords interface {
 	AggregationColumns() []AggregationColumn
+	TableName() string
+	ScanRows(row Rows) error
+}
+
+type Aggregator interface {
+	Filter
+	GroupBy() []string
+}
+
+func SumOf(column string) *AggregationColumn{
+	return &AggregationColumn{
+		Column: column
+	}
 }
