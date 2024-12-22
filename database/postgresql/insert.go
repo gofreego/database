@@ -11,9 +11,8 @@ import (
 )
 
 /*
-	Insert a record into the postgresql database
+Insert a record into the postgresql database
 */
-
 func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options ...any) error {
 	prepareName := dbcommon.GetPrepareName(options...)
 	columns, values := record.InsertColumnsValues()
@@ -51,10 +50,20 @@ func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options .
 	return nil
 }
 
-/*
-	helper function to generate insert query
-*/
+// InsertMany inserts multiple records of the same table into the database
+func (d *Database) InsertMany(ctx context.Context, records []dbcommon.Record, options ...any) error {
+	query, values := recordsToInsertManyQuery(records[0].TableName(), records)
+	_, err := d.conn.ExecContext(ctx, query, values...)
+	if err != nil {
+		logger.Error(ctx, "Database::PostgreSQL::InsertMany::Insert failed for table %s, Err:%s", records[0].TableName(), err.Error())
+		return dberrors.ParseSQLError("Insert failed for table "+records[0].TableName(), err)
+	}
+	return nil
+}
 
+/*
+helper function to generate insert query
+*/
 func recordToInsertQuery(table string, columns []string) string {
 	columnsStr := ""
 	valuesStr := ""
@@ -65,4 +74,26 @@ func recordToInsertQuery(table string, columns []string) string {
 	columnsStr = columnsStr[:len(columnsStr)-2]
 	valuesStr = valuesStr[:len(valuesStr)-2]
 	return "INSERT INTO " + table + " (" + columnsStr + ") VALUES (" + valuesStr + ") RETURNING id"
+}
+
+func recordsToInsertManyQuery(table string, records []dbcommon.Record) (string, []any) {
+	columnsStr := ""
+	valuesStr := ""
+	valueNumber := 1
+	allValues := []any{}
+	for _, record := range records {
+		valueStr := ""
+		columns, values := record.InsertColumnsValues()
+		for _, column := range columns {
+			columnsStr += column + ", "
+			valuesStr += "$" + strconv.Itoa(valueNumber) + ", "
+			valueNumber++
+		}
+		valuesStr = valuesStr + " ( " + valueStr[:len(valueStr)-2] + " ), "
+
+		allValues = append(allValues, values)
+	}
+	columnsStr = columnsStr[:len(columnsStr)-2]
+	valuesStr = valuesStr[:len(valuesStr)-2]
+	return "INSERT INTO " + table + " (" + columnsStr + ") VALUES " + valuesStr, allValues
 }

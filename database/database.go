@@ -14,6 +14,7 @@ type Database interface {
 	Ping(ctx context.Context) error
 	Close(ctx context.Context) error
 	Insert(ctx context.Context, record dbcommon.Record, options ...any) error
+	InsertMany(ctx context.Context, records []dbcommon.Record, options ...any) error
 	UpdateByID(ctx context.Context, record dbcommon.Record, options ...any) error
 	UpdateByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) (int64, error)
 	DeleteByID(ctx context.Context, record dbcommon.Record, options ...any) error
@@ -23,7 +24,7 @@ type Database interface {
 	FindOneByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) error
 	FindAll(ctx context.Context, record dbcommon.Records, filter dbcommon.Filter, options ...any) error
 	Count(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) (int, error)
-	Aggregate(ctx context.Context, record dbcommon.AggregationRecords, filter dbcommon.Filter, options ...any) error
+	Aggregate(ctx context.Context, record dbcommon.AggregationRecords, filter dbcommon.Aggregator, options ...any) error
 }
 
 const (

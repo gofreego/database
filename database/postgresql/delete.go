@@ -81,18 +81,18 @@ func (d *Database) DeleteByFilter(ctx context.Context, record dbcommon.Record, f
 	var result sql.Result
 	var err error
 	if prepareName != "" {
+
+		query, values := generateDeleteByFilterQuery(record.TableName(), filter)
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-			query, values := generateDeleteByFilterQuery(record.TableName(), filter)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
 				logger.Error(ctx, "Database::PostgreSQL::DeleteByFilter::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
 				return 0, dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
 			}
 			d.preparedStatements[prepareName] = stmt
-			// execute the statement
-			result, err = stmt.ExecContext(ctx, values...)
 		}
+		result, err = d.preparedStatements[prepareName].ExecContext(ctx, values...)
 	} else {
 		// execute the statement
 		query, values := generateDeleteByFilterQuery(record.TableName(), filter)

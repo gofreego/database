@@ -2,11 +2,49 @@ package postgresql
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"openauth/database/database/dbcommon"
+	"openauth/database/database/dberrors"
+
+	"github.com/gofreego/goutils/logger"
 )
 
-func (d *Database) Aggregate(ctx context.Context, record dbcommon.AggregationRecords, filter dbcommon.Filter, options ...any) error {
+func (d *Database) Aggregate(ctx context.Context, record dbcommon.AggregationRecords, filter dbcommon.Aggregator, options ...any) error {
+	var rows *sql.Rows
+	var err error
+	var values []interface{}
+	var query string
+	prepareName := dbcommon.GetPrepareName(options...)
+	if prepareName != "" {
+		if d.preparedStatements[prepareName] == nil {
+			// prepare the statement
+			query, values = generateAggregationQuery(record.TableName(), record.AggregationColumns(), filter)
+			logger.Debug(ctx, "Database::PostgreSQL::Aggregate::Query:%s: %s", prepareName, query)
+			stmt, err := d.conn.PrepareContext(ctx, query)
+			if err != nil {
+				logger.Error(ctx, "Database::PostgreSQL::Aggregate::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
+				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+			}
+			d.preparedStatements[prepareName] = stmt
+		}
+		// execute the statement
+		rows, err = d.preparedStatements[prepareName].QueryContext(ctx, values...)
+	} else {
+		query, values = generateAggregationQuery(record.TableName(), record.AggregationColumns(), filter)
+		logger.Debug(ctx, "Database::PostgreSQL::Aggregate::Query: %s, values: %v", query, values)
+		rows, err = d.conn.QueryContext(ctx, query, values...)
+	}
+	if err != nil {
+		logger.Error(ctx, "Database::PostgreSQL::Aggregate::Aggregate failed for table %s, Err:%s", record.TableName(), err.Error())
+		return dberrors.ParseSQLError("Aggregate failed for table "+record.TableName(), err)
+	}
+	defer rows.Close()
+	err = record.ScanRows(rows)
+	if err != nil {
+		logger.Error(ctx, "Database::PostgreSQL::Aggregate::Scan failed for table %s, Err:%s", record.TableName(), err.Error())
+		return dberrors.ParseSQLError("Scan failed for table "+record.TableName(), err)
+	}
 	return nil
 }
 
@@ -16,18 +54,19 @@ helper function to generate the query for aggregation
 
 */
 
-func generateAggregationQuery(tableName string, aggregationColumns []dbcommon.AggregationColumn, filter dbcommon.Aggregator) (string, []interface{}) {
+func generateAggregationQuery(tableName string, aggregationColumns []*dbcommon.AggregationColumn, filter dbcommon.Aggregator) (string, []interface{}) {
 	query := "SELECT " + parseAggregationColumns(aggregationColumns) + " FROM " + tableName
 	var values []interface{}
 	valueNumber := 1
-	if filter != nil {
-
-		condition, condValues := parseCondition(filter.Condition(), &valueNumber)
-		if condition != "" {
-			query += " WHERE " + condition
-			values = append(values, condValues...)
-		}
+	if filter == nil {
+		return query, values
 	}
+	condition, condValues := parseCondition(filter.Condition(), &valueNumber)
+	if condition != "" {
+		query += " WHERE " + condition
+		values = append(values, condValues...)
+	}
+
 	query += parseGroupBy(filter.GroupBy())
 	query += parseSort(filter.Sorts())
 	if filter.Offset() > 0 {
@@ -43,7 +82,7 @@ func generateAggregationQuery(tableName string, aggregationColumns []dbcommon.Ag
 	return query, values
 }
 
-func parseAggregationColumns(aggregationColumns []dbcommon.AggregationColumn) string {
+func parseAggregationColumns(aggregationColumns []*dbcommon.AggregationColumn) string {
 	aggregationColumnsString := ""
 	for i, aggregationColumn := range aggregationColumns {
 		if i != 0 {
@@ -62,7 +101,7 @@ var aggregationFunctionMap = map[dbcommon.Function]string{
 	dbcommon.Max:   "MAX",
 }
 
-func parseAggregationColumn(aggregationColumn dbcommon.AggregationColumn) string {
+func parseAggregationColumn(aggregationColumn *dbcommon.AggregationColumn) string {
 	if aggregationColumn.Function == dbcommon.NoFunction {
 		return aggregationColumn.Column + parseAlias(aggregationColumn.Alias)
 	}

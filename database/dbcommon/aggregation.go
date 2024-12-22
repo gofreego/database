@@ -19,7 +19,7 @@ type AggregationColumn struct {
 }
 
 type AggregationRecords interface {
-	AggregationColumns() []AggregationColumn
+	AggregationColumns() []*AggregationColumn
 	TableName() string
 	ScanRows(row Rows) error
 }
@@ -29,8 +29,44 @@ type Aggregator interface {
 	GroupBy() []string
 }
 
-func SumOf(column string) *AggregationColumn{
+func SumOf(column string) *AggregationColumn {
 	return &AggregationColumn{
-		Column: column
+		Column:   column,
+		Function: Sum,
+	}
+}
+
+func AvgOf(column string) *AggregationColumn {
+	return &AggregationColumn{
+		Column:   column,
+		Function: Avg,
+	}
+}
+
+func CountOf(column string) *AggregationColumn {
+	return &AggregationColumn{
+		Column:   column,
+		Function: Count,
+	}
+}
+
+func MaxOf(column string) *AggregationColumn {
+	return &AggregationColumn{
+		Column:   column,
+		Function: Max,
+	}
+}
+
+func MinOf(column string) *AggregationColumn {
+	return &AggregationColumn{
+		Column:   column,
+		Function: Min,
+	}
+}
+
+func DistinctOf(column string) *AggregationColumn {
+	return &AggregationColumn{
+		Column:   column,
+		Function: Distinct,
 	}
 }
