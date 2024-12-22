@@ -20,28 +20,28 @@ func (d *Database) UpdateByID(ctx context.Context, record dbcommon.Record, optio
 		stmt, ok := d.preparedStatements[prepareName]
 		if !ok {
 			// prepare statement
-			query := generateUpdateByIDQuery(record.TableName(), columns)
+			query := generateUpdateByIDQuery(parseTableName(record.Table()), columns)
 			logger.Debug(ctx, "Database::PostgreSQL::UpdateByID::Query:%s: %s", prepareName, query)
 			stmt, err = d.conn.PrepareContext(ctx, query)
 			if err != nil {
-				logger.Error(ctx, "Database::PostgreSQL::UpdateByID::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
-				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+				logger.Error(ctx, "Database::PostgreSQL::UpdateByID::Prepare statement failed for name %s, table %s, Err:%s", prepareName, parseTableName(record.Table()), err.Error())
+				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+parseTableName(record.Table()), err)
 			}
 			d.preparedStatements[prepareName] = stmt
 		}
 		// execute statement
 		result, err = stmt.ExecContext(ctx, values...)
 	} else {
-		result, err = d.conn.ExecContext(ctx, generateUpdateByIDQuery(record.TableName(), columns), values...)
+		result, err = d.conn.ExecContext(ctx, generateUpdateByIDQuery(parseTableName(record.Table()), columns), values...)
 	}
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::UpdateByID::Update failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("Update failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::UpdateByID::Update failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("Update failed for table "+parseTableName(record.Table()), err)
 	}
 	count, err := result.RowsAffected()
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::UpdateByID::RowsAffected failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("RowsAffected failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::UpdateByID::RowsAffected failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("RowsAffected failed for table "+parseTableName(record.Table()), err)
 	}
 	if count == 0 {
 		return dberrors.NewError(dberrors.ErrRecordNotFound, "Record not found", nil)
@@ -58,12 +58,12 @@ func (d *Database) UpdateByFilter(ctx context.Context, record dbcommon.Record, f
 		stmt, ok := d.preparedStatements[prepareName]
 		if !ok {
 			// prepare statement
-			query, filterValues := generateUpdateByFilterQuery(record.TableName(), columns, filter)
+			query, filterValues := generateUpdateByFilterQuery(parseTableName(record.Table()), columns, filter)
 			values = append(values, filterValues...)
 			stmt, err = d.conn.PrepareContext(ctx, query)
 			if err != nil {
-				logger.Error(ctx, "Database::PostgreSQL::UpdateByFilter::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
-				return 0, dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+				logger.Error(ctx, "Database::PostgreSQL::UpdateByFilter::Prepare statement failed for name %s, table %s, Err:%s", prepareName, parseTableName(record.Table()), err.Error())
+				return 0, dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+parseTableName(record.Table()), err)
 			}
 			d.preparedStatements[prepareName] = stmt
 		} else {
@@ -73,18 +73,18 @@ func (d *Database) UpdateByFilter(ctx context.Context, record dbcommon.Record, f
 		// execute statement
 		result, err = stmt.ExecContext(ctx, values...)
 	} else {
-		query, filterValues := generateUpdateByFilterQuery(record.TableName(), columns, filter)
+		query, filterValues := generateUpdateByFilterQuery(parseTableName(record.Table()), columns, filter)
 		values = append(values, filterValues...)
 		result, err = d.conn.ExecContext(ctx, query, values...)
 	}
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::UpdateByFilter::Update failed for table %s, Err:%s", record.TableName(), err.Error())
-		return 0, dberrors.ParseSQLError("Update failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::UpdateByFilter::Update failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return 0, dberrors.ParseSQLError("Update failed for table "+parseTableName(record.Table()), err)
 	}
 	count, err := result.RowsAffected()
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::UpdateByFilter::RowsAffected failed for table %s, Err:%s", record.TableName(), err.Error())
-		return 0, dberrors.ParseSQLError("RowsAffected failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::UpdateByFilter::RowsAffected failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return 0, dberrors.ParseSQLError("RowsAffected failed for table "+parseTableName(record.Table()), err)
 	}
 	return count, nil
 }

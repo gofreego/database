@@ -17,28 +17,28 @@ func (d *Database) FindOneByID(ctx context.Context, record dbcommon.Record, opti
 	if prepareName != "" {
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-			query := generateFindOneByIDQuery(record.TableName(), record.SelectColumns())
+			query := generateFindOneByIDQuery(parseTableName(record.Table()), record.SelectColumns())
 			logger.Debug(ctx, "Database::PostgreSQL::FindOneByID::Query:%s: %s", prepareName, query)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
-				logger.Error(ctx, "Database::PostgreSQL::FindOneByID::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
-				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+				logger.Error(ctx, "Database::PostgreSQL::FindOneByID::Prepare statement failed for name %s, table %s, Err:%s", prepareName, parseTableName(record.Table()), err.Error())
+				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+parseTableName(record.Table()), err)
 			}
 			d.preparedStatements[prepareName] = stmt
 		}
 		// execute the statement
 		row = d.preparedStatements[prepareName].QueryRowContext(ctx, record.ID())
 	} else {
-		row = d.conn.QueryRowContext(ctx, generateFindOneByIDQuery(record.TableName(), record.SelectColumns()), record.ID())
+		row = d.conn.QueryRowContext(ctx, generateFindOneByIDQuery(parseTableName(record.Table()), record.SelectColumns()), record.ID())
 	}
 	if row.Err() != nil {
-		logger.Error(ctx, "Database::PostgreSQL::FindOneByID::FindOneByID failed for table %s, Err:%s", record.TableName(), row.Err().Error())
-		return dberrors.ParseSQLError("FindOneByID failed for table "+record.TableName(), row.Err())
+		logger.Error(ctx, "Database::PostgreSQL::FindOneByID::FindOneByID failed for table %s, Err:%s", parseTableName(record.Table()), row.Err().Error())
+		return dberrors.ParseSQLError("FindOneByID failed for table "+parseTableName(record.Table()), row.Err())
 	}
 	err := record.ScanRow(row)
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::FindOneByID::Scan failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("Scan failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::FindOneByID::Scan failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("Scan failed for table "+parseTableName(record.Table()), err)
 	}
 	return nil
 }
@@ -49,11 +49,11 @@ func (d *Database) FindOneByFilter(ctx context.Context, record dbcommon.Record, 
 	if prepareName != "" {
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-			query, values := generateFindQuery(record.TableName(), record.SelectColumns(), filter)
+			query, values := generateFindQuery(parseTableName(record.Table()), record.SelectColumns(), filter)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
-				logger.Error(ctx, "Database::PostgreSQL::FindOneByFilter::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
-				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+				logger.Error(ctx, "Database::PostgreSQL::FindOneByFilter::Prepare statement failed for name %s, table %s, Err:%s", prepareName, parseTableName(record.Table()), err.Error())
+				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+parseTableName(record.Table()), err)
 			}
 			d.preparedStatements[prepareName] = stmt
 			// execute the statement
@@ -64,17 +64,17 @@ func (d *Database) FindOneByFilter(ctx context.Context, record dbcommon.Record, 
 			row = d.preparedStatements[prepareName].QueryRowContext(ctx, values...)
 		}
 	} else {
-		query, values := generateFindQuery(record.TableName(), record.SelectColumns(), filter)
+		query, values := generateFindQuery(parseTableName(record.Table()), record.SelectColumns(), filter)
 		row = d.conn.QueryRowContext(ctx, query, values...)
 	}
 	if row.Err() != nil {
-		logger.Error(ctx, "Database::PostgreSQL::FindOneByFilter::FindOneByFilter failed for table %s, Err:%s", record.TableName(), row.Err().Error())
-		return dberrors.ParseSQLError("FindOneByFilter failed for table "+record.TableName(), row.Err())
+		logger.Error(ctx, "Database::PostgreSQL::FindOneByFilter::FindOneByFilter failed for table %s, Err:%s", parseTableName(record.Table()), row.Err().Error())
+		return dberrors.ParseSQLError("FindOneByFilter failed for table "+parseTableName(record.Table()), row.Err())
 	}
 	err := record.ScanRow(row)
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::FindOneByFilter::Scan failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("Scan failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::FindOneByFilter::Scan failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("Scan failed for table "+parseTableName(record.Table()), err)
 	}
 	return nil
 }
@@ -88,31 +88,31 @@ func (d *Database) FindAll(ctx context.Context, record dbcommon.Records, filter 
 	if prepareName != "" {
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-			query, values = generateFindQuery(record.TableName(), record.SelectColumns(), filter)
+			query, values = generateFindQuery(parseTableName(record.Table()), record.SelectColumns(), filter)
 			logger.Debug(ctx, "Database::PostgreSQL::FindAll::Query:%s: %s", prepareName, query)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
-				logger.Error(ctx, "Database::PostgreSQL::FindAll::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
-				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+				logger.Error(ctx, "Database::PostgreSQL::FindAll::Prepare statement failed for name %s, table %s, Err:%s", prepareName, parseTableName(record.Table()), err.Error())
+				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+parseTableName(record.Table()), err)
 			}
 			d.preparedStatements[prepareName] = stmt
 		}
 		// execute the statement
 		rows, err = d.preparedStatements[prepareName].QueryContext(ctx, values...)
 	} else {
-		query, values = generateFindQuery(record.TableName(), record.SelectColumns(), filter)
+		query, values = generateFindQuery(parseTableName(record.Table()), record.SelectColumns(), filter)
 		logger.Debug(ctx, "Database::PostgreSQL::FindAll::Query: %s, values: %v", query, values)
 		rows, err = d.conn.QueryContext(ctx, query, values...)
 	}
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::FindAll::FindAll failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("FindAll failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::FindAll::FindAll failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("FindAll failed for table "+parseTableName(record.Table()), err)
 	}
 	defer rows.Close()
 	err = record.ScanRows(rows)
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::FindAll::Scan failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("Scan failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::FindAll::Scan failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("Scan failed for table "+parseTableName(record.Table()), err)
 	}
 	return nil
 }

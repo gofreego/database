@@ -1,7 +1,7 @@
 package dbcommon
 
 type Record interface {
-	TableName() string
+	Table() *Table
 	InsertColumnsValues() ([]string, []interface{})
 	UpdateColumnsValues() ([]string, []interface{})
 	SelectColumns() []string
@@ -11,7 +11,7 @@ type Record interface {
 }
 
 type Records interface {
-	TableName() string
+	Table() *Table
 	SelectColumns() []string
 	ScanRows(row Rows) error
 }

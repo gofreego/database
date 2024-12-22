@@ -12,15 +12,15 @@ const (
 	Distinct
 )
 
-type AggregationColumn struct {
+type Column struct {
 	Column   string
 	Alias    string
 	Function Function
 }
 
 type AggregationRecords interface {
-	AggregationColumns() []*AggregationColumn
-	TableName() string
+	AggregationColumns() []*Column
+	Table() *Table
 	ScanRows(row Rows) error
 }
 
@@ -29,43 +29,43 @@ type Aggregator interface {
 	GroupBy() []string
 }
 
-func SumOf(column string) *AggregationColumn {
-	return &AggregationColumn{
+func SumOf(column string) *Column {
+	return &Column{
 		Column:   column,
 		Function: Sum,
 	}
 }
 
-func AvgOf(column string) *AggregationColumn {
-	return &AggregationColumn{
+func AvgOf(column string) *Column {
+	return &Column{
 		Column:   column,
 		Function: Avg,
 	}
 }
 
-func CountOf(column string) *AggregationColumn {
-	return &AggregationColumn{
+func CountOf(column string) *Column {
+	return &Column{
 		Column:   column,
 		Function: Count,
 	}
 }
 
-func MaxOf(column string) *AggregationColumn {
-	return &AggregationColumn{
+func MaxOf(column string) *Column {
+	return &Column{
 		Column:   column,
 		Function: Max,
 	}
 }
 
-func MinOf(column string) *AggregationColumn {
-	return &AggregationColumn{
+func MinOf(column string) *Column {
+	return &Column{
 		Column:   column,
 		Function: Min,
 	}
 }
 
-func DistinctOf(column string) *AggregationColumn {
-	return &AggregationColumn{
+func DistinctOf(column string) *Column {
+	return &Column{
 		Column:   column,
 		Function: Distinct,
 	}

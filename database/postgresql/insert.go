@@ -22,31 +22,31 @@ func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options .
 		stmt, ok := d.preparedStatements[prepareName]
 		if !ok {
 			// Prepare statement
-			query := recordToInsertQuery(record.TableName(), columns)
+			query := recordToInsertQuery(parseTableName(record.Table()), columns)
 			logger.Debug(ctx, "Database::PostgreSQL::Insert::Query:%s: %s", prepareName, query)
 			stmt, err = d.conn.PrepareContext(ctx, query)
 			if err != nil {
-				logger.Error(ctx, "Database::PostgreSQL::Insert::Prepare statement failed for name %s, table %s , Err:%s", prepareName, record.TableName(), err.Error())
-				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+				logger.Error(ctx, "Database::PostgreSQL::Insert::Prepare statement failed for name %s, table %s , Err:%s", prepareName, parseTableName(record.Table()), err.Error())
+				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+parseTableName(record.Table()), err)
 			}
 		}
 		// Execute statement
 		result = stmt.QueryRowContext(ctx, values...)
 	} else {
-		query := recordToInsertQuery(record.TableName(), columns)
+		query := recordToInsertQuery(parseTableName(record.Table()), columns)
 		logger.Debug(ctx, "Database::PostgreSQL::Insert::Query: %s", query)
 		result = d.conn.QueryRowContext(ctx, query, values...)
 	}
 
 	if err := result.Err(); err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::Insert::Insert failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("Insert failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::Insert::Insert failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("Insert failed for table "+parseTableName(record.Table()), err)
 	}
 
 	var id int64
 	err = result.Scan(&id)
 	if err != nil {
-		return dberrors.ParseSQLError("LastInsertId failed for table "+record.TableName(), err)
+		return dberrors.ParseSQLError("LastInsertId failed for table "+parseTableName(record.Table()), err)
 	}
 	record.SetID(id)
 	return nil
@@ -54,12 +54,15 @@ func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options .
 
 // InsertMany inserts multiple records of the same table into the database
 func (d *Database) InsertMany(ctx context.Context, records []dbcommon.Record, options ...any) error {
-	query, values := recordsToInsertManyQuery(records[0].TableName(), records)
+	if len(records) == 0 {
+		return nil
+	}
+	query, values := recordsToInsertManyQuery(records[0].Table(), records)
 	logger.Debug(ctx, "InsertMany Query: %s", query)
 	_, err := d.conn.ExecContext(ctx, query, values...)
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::InsertMany::Insert failed for table %s, Err:%s", records[0].TableName(), err.Error())
-		return dberrors.ParseSQLError("Insert failed for table "+records[0].TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::InsertMany::Insert failed for table %s, Err:%s", parseTableName(records[0].Table()), err.Error())
+		return dberrors.ParseSQLError("Insert failed for table "+parseTableName(records[0].Table()), err)
 	}
 	return nil
 }
@@ -79,7 +82,7 @@ func recordToInsertQuery(table string, columns []string) string {
 	return "INSERT INTO " + table + " (" + columnsStr + ") VALUES (" + valuesStr + ") RETURNING id"
 }
 
-func recordsToInsertManyQuery(table string, records []dbcommon.Record) (string, []any) {
+func recordsToInsertManyQuery(table *dbcommon.Table, records []dbcommon.Record) (string, []any) {
 	columnsStr := ""
 	valuesStr := ""
 	valueNumber := 1
@@ -101,5 +104,5 @@ func recordsToInsertManyQuery(table string, records []dbcommon.Record) (string, 
 	}
 	columnsStr = columnsStr[:len(columnsStr)-2]
 	valuesStr = valuesStr[:len(valuesStr)-2]
-	return "INSERT INTO " + table + " (" + columnsStr + ") VALUES " + valuesStr, allValues
+	return "INSERT INTO " + parseTableName(table) + " (" + columnsStr + ") VALUES " + valuesStr, allValues
 }

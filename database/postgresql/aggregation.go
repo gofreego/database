@@ -19,31 +19,31 @@ func (d *Database) Aggregate(ctx context.Context, record dbcommon.AggregationRec
 	if prepareName != "" {
 		if d.preparedStatements[prepareName] == nil {
 			// prepare the statement
-			query, values = generateAggregationQuery(record.TableName(), record.AggregationColumns(), filter)
+			query, values = generateAggregationQuery(parseTableName(record.Table()), record.AggregationColumns(), filter)
 			logger.Debug(ctx, "Database::PostgreSQL::Aggregate::Query:%s: %s", prepareName, query)
 			stmt, err := d.conn.PrepareContext(ctx, query)
 			if err != nil {
-				logger.Error(ctx, "Database::PostgreSQL::Aggregate::Prepare statement failed for name %s, table %s, Err:%s", prepareName, record.TableName(), err.Error())
-				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+record.TableName(), err)
+				logger.Error(ctx, "Database::PostgreSQL::Aggregate::Prepare statement failed for name %s, table %s, Err:%s", prepareName, parseTableName(record.Table()), err.Error())
+				return dberrors.ParseSQLError("Prepare statement failed for name "+prepareName+", table "+parseTableName(record.Table()), err)
 			}
 			d.preparedStatements[prepareName] = stmt
 		}
 		// execute the statement
 		rows, err = d.preparedStatements[prepareName].QueryContext(ctx, values...)
 	} else {
-		query, values = generateAggregationQuery(record.TableName(), record.AggregationColumns(), filter)
+		query, values = generateAggregationQuery(parseTableName(record.Table()), record.AggregationColumns(), filter)
 		logger.Debug(ctx, "Database::PostgreSQL::Aggregate::Query: %s, values: %v", query, values)
 		rows, err = d.conn.QueryContext(ctx, query, values...)
 	}
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::Aggregate::Aggregate failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("Aggregate failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::Aggregate::Aggregate failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("Aggregate failed for table "+parseTableName(record.Table()), err)
 	}
 	defer rows.Close()
 	err = record.ScanRows(rows)
 	if err != nil {
-		logger.Error(ctx, "Database::PostgreSQL::Aggregate::Scan failed for table %s, Err:%s", record.TableName(), err.Error())
-		return dberrors.ParseSQLError("Scan failed for table "+record.TableName(), err)
+		logger.Error(ctx, "Database::PostgreSQL::Aggregate::Scan failed for table %s, Err:%s", parseTableName(record.Table()), err.Error())
+		return dberrors.ParseSQLError("Scan failed for table "+parseTableName(record.Table()), err)
 	}
 	return nil
 }
@@ -54,8 +54,8 @@ helper function to generate the query for aggregation
 
 */
 
-func generateAggregationQuery(tableName string, aggregationColumns []*dbcommon.AggregationColumn, filter dbcommon.Aggregator) (string, []interface{}) {
-	query := "SELECT " + parseAggregationColumns(aggregationColumns) + " FROM " + tableName
+func generateAggregationQuery(tableName string, aggregationColumns []*dbcommon.Column, filter dbcommon.Aggregator) (string, []interface{}) {
+	query := "SELECT " + parseColumns(aggregationColumns) + " FROM " + tableName
 	var values []interface{}
 	valueNumber := 1
 	if filter == nil {
@@ -82,13 +82,13 @@ func generateAggregationQuery(tableName string, aggregationColumns []*dbcommon.A
 	return query, values
 }
 
-func parseAggregationColumns(aggregationColumns []*dbcommon.AggregationColumn) string {
+func parseColumns(aggregationColumns []*dbcommon.Column) string {
 	aggregationColumnsString := ""
 	for i, aggregationColumn := range aggregationColumns {
 		if i != 0 {
 			aggregationColumnsString += ", "
 		}
-		aggregationColumnsString += parseAggregationColumn(aggregationColumn)
+		aggregationColumnsString += parseColumn(aggregationColumn)
 	}
 	return aggregationColumnsString
 }
@@ -101,7 +101,7 @@ var aggregationFunctionMap = map[dbcommon.Function]string{
 	dbcommon.Max:   "MAX",
 }
 
-func parseAggregationColumn(aggregationColumn *dbcommon.AggregationColumn) string {
+func parseColumn(aggregationColumn *dbcommon.Column) string {
 	if aggregationColumn.Function == dbcommon.NoFunction {
 		return aggregationColumn.Column + parseAlias(aggregationColumn.Alias)
 	}

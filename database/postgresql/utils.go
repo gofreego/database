@@ -21,6 +21,17 @@ var operators = map[dbcommon.Operator]string{
 	dbcommon.AND:   " AND ",
 }
 
+func parseValue(value interface{}) interface{} {
+	switch v := value.(type) {
+	case *dbcommon.Column:
+		return parseColumn(value.(*dbcommon.Column))
+	case bool:
+		return strconv.FormatBool(v)
+	default:
+		return value
+	}
+}
+
 func parseCondition(c *dbcommon.Condition, valueNumber *int) (string, []interface{}) {
 	if c == nil {
 		return "", nil
@@ -40,8 +51,14 @@ func parseCondition(c *dbcommon.Condition, valueNumber *int) (string, []interfac
 	if c.Operator == dbcommon.In || c.Operator == dbcommon.NotIn {
 		return fmt.Sprintf("%s %s %s", c.Column, operators[c.Operator], getValuesMarks(len(c.Values), valueNumber)), c.Values
 	}
-	*valueNumber++
-	return fmt.Sprintf("%s %s $%d", c.Column, operators[c.Operator], *valueNumber-1), []interface{}{c.Value}
+	switch c.Value.(type) {
+	case *dbcommon.Column:
+		return fmt.Sprintf("%s %s %s", c.Column, operators[c.Operator], parseColumn(c.Value.(*dbcommon.Column))), nil
+	default:
+		*valueNumber++
+		return fmt.Sprintf("%s %s $%d", c.Column, operators[c.Operator], *valueNumber-1), []interface{}{c.Value}
+	}
+
 }
 
 func getValues(c *dbcommon.Condition) []interface{} {
@@ -104,4 +121,37 @@ func parseGroupBy(columns []string) string {
 		return ""
 	}
 	return " GROUP BY " + strings.Join(columns, ", ")
+}
+
+/*
+
+Parse Table
+
+*/
+
+var joinTypeToPGSQL = map[dbcommon.JoinType]string{
+	dbcommon.InnerJoin: "INNER JOIN",
+	dbcommon.LeftJoin:  "LEFT JOIN",
+	dbcommon.RightJoin: "RIGHT JOIN",
+	dbcommon.FullJoin:  "FULL JOIN",
+}
+
+func tableString(table *dbcommon.Table) string {
+	if table.Alias != "" {
+		return table.Name + " AS " + table.Alias
+	}
+	return table.Name
+}
+
+func parseJoin(join *dbcommon.Join) string {
+	condStr, _ := parseCondition(join.On, new(int))
+	return joinTypeToPGSQL[join.JoinType] + tableString(join.Table) + " ON " + condStr
+}
+
+func parseTableName(table *dbcommon.Table) string {
+	str := tableString(table) + " "
+	for _, join := range table.Joins {
+		str += parseJoin(join) + " "
+	}
+	return str
 }
