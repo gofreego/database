@@ -33,7 +33,9 @@ func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options .
 		// Execute statement
 		result = stmt.QueryRowContext(ctx, values...)
 	} else {
-		result = d.conn.QueryRowContext(ctx, recordToInsertQuery(record.TableName(), columns), values...)
+		query := recordToInsertQuery(record.TableName(), columns)
+		logger.Debug(ctx, "Database::PostgreSQL::Insert::Query: %s", query)
+		result = d.conn.QueryRowContext(ctx, query, values...)
 	}
 
 	if err := result.Err(); err != nil {
@@ -53,6 +55,7 @@ func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options .
 // InsertMany inserts multiple records of the same table into the database
 func (d *Database) InsertMany(ctx context.Context, records []dbcommon.Record, options ...any) error {
 	query, values := recordsToInsertManyQuery(records[0].TableName(), records)
+	logger.Debug(ctx, "InsertMany Query: %s", query)
 	_, err := d.conn.ExecContext(ctx, query, values...)
 	if err != nil {
 		logger.Error(ctx, "Database::PostgreSQL::InsertMany::Insert failed for table %s, Err:%s", records[0].TableName(), err.Error())
@@ -81,17 +84,20 @@ func recordsToInsertManyQuery(table string, records []dbcommon.Record) (string, 
 	valuesStr := ""
 	valueNumber := 1
 	allValues := []any{}
-	for _, record := range records {
+	for i, record := range records {
 		valueStr := ""
 		columns, values := record.InsertColumnsValues()
+
 		for _, column := range columns {
-			columnsStr += column + ", "
-			valuesStr += "$" + strconv.Itoa(valueNumber) + ", "
+			if i == 0 {
+				columnsStr += column + ", "
+			}
+			valueStr += "$" + strconv.Itoa(valueNumber) + ", "
 			valueNumber++
 		}
 		valuesStr = valuesStr + " ( " + valueStr[:len(valueStr)-2] + " ), "
 
-		allValues = append(allValues, values)
+		allValues = append(allValues, values...)
 	}
 	columnsStr = columnsStr[:len(columnsStr)-2]
 	valuesStr = valuesStr[:len(valuesStr)-2]
