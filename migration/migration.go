@@ -29,16 +29,16 @@ type Config interface {
 	GetDatabaseConfig() *database.Config
 }
 
-type MigrationScript struct {
+type Migrator struct {
 	conf Config
 	m    *migrate.Migrate
 }
 
-func NewMigrationApp(ctx context.Context, conf Config) *MigrationScript {
-	return &MigrationScript{conf: conf}
+func NewMigrator(ctx context.Context, conf Config) *Migrator {
+	return &Migrator{conf: conf}
 }
 
-func (app *MigrationScript) Run(ctx context.Context) {
+func (app *Migrator) Run(ctx context.Context) {
 	logger.Info(ctx, "MigrationScript started...")
 	if app.conf.GetMigrationConfig() == nil || app.conf.GetDatabaseConfig() == nil {
 		logger.Panic(ctx, "MigrationScript: invalid config, migration or database config is nil")
@@ -96,11 +96,11 @@ func (app *MigrationScript) Run(ctx context.Context) {
 	fmt.Println("Migration applied successfully!")
 }
 
-func (app *MigrationScript) Shutdown(ctx context.Context) {
+func (app *Migrator) Shutdown(ctx context.Context) {
 	app.m.GracefulStop <- true
 }
 
-func (app *MigrationScript) Name() string {
+func (app *Migrator) Name() string {
 	return "MigrationScript"
 }
 
