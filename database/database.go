@@ -34,25 +34,14 @@ const (
 
 type Config struct {
 	Name       string
-	Logger     logger.Config
+	Logger     *logger.Config
 	PostgreSQL *postgresql.Config
 }
 
-func withDefaultValues(loggerConf logger.Config) logger.Config {
-	if loggerConf.AppName == "" {
-		loggerConf.AppName = "Database"
-	}
-	if loggerConf.Level == "" {
-		loggerConf.Level = "debug"
-	}
-	if loggerConf.Build == "" {
-		loggerConf.Build = "development"
-	}
-	return loggerConf
-}
-
 func NewDatabase(ctx context.Context, config *Config) (Database, error) {
-	withDefaultValues(config.Logger).InitiateLogger()
+	if config.Logger != nil {
+		config.Logger.InitiateLogger()
+	}
 	switch config.Name {
 	case PostgreSQL:
 		return postgresql.NewDatabase(ctx, config.PostgreSQL)
