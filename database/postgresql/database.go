@@ -2,8 +2,10 @@ package postgresql
 
 import (
 	"context"
+
 	"database/sql"
-	"openauth/database/database/dberrors"
+
+	"github.com/gofreego/database/database/dberrors"
 )
 
 type Database struct {

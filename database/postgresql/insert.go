@@ -2,10 +2,12 @@ package postgresql
 
 import (
 	"context"
-	"database/sql"
-	"openauth/database/database/dbcommon"
-	"openauth/database/database/dberrors"
 	"strconv"
+
+	"database/sql"
+
+	"github.com/gofreego/database/database/dbcommon"
+	"github.com/gofreego/database/database/dberrors"
 
 	"github.com/gofreego/goutils/logger"
 )

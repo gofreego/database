@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"openauth/database/database/dbcommon"
-	"openauth/database/database/dberrors"
-	"openauth/database/database/postgresql"
+
+	"github.com/gofreego/database/database/dbcommon"
+	"github.com/gofreego/database/database/dberrors"
+	"github.com/gofreego/database/database/postgresql"
 
 	"github.com/gofreego/goutils/logger"
 )

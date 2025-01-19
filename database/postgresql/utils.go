@@ -2,9 +2,10 @@ package postgresql
 
 import (
 	"fmt"
-	"openauth/database/database/dbcommon"
 	"strconv"
 	"strings"
+
+	"github.com/gofreego/database/database/dbcommon"
 )
 
 var operators = map[dbcommon.Operator]string{

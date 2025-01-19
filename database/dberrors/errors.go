@@ -1,8 +1,9 @@
 package dberrors
 
 import (
-	"database/sql"
 	"fmt"
+
+	"database/sql"
 )
 
 type Code int

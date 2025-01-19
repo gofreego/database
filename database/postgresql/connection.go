@@ -2,9 +2,11 @@ package postgresql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"openauth/database/database/dberrors"
+
+	"database/sql"
+
+	"github.com/gofreego/database/database/dberrors"
 
 	"github.com/gofreego/goutils/logger"
 	_ "github.com/lib/pq" // import the PostgreSQL driver
