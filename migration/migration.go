@@ -20,8 +20,8 @@ const (
 )
 
 type MigrationConfig struct {
-	FilesPath string
-	Action    string // UP | DOWN
+	FilesPath string `yaml:"FilesPath"`
+	Action    string `yaml:"Action"` // UP | DOWN
 }
 
 type Config interface {

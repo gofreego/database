@@ -33,9 +33,9 @@ const (
 )
 
 type Config struct {
-	Name       string
-	Logger     *logger.Config
-	PostgreSQL *postgresql.Config
+	Name       string             `yaml:"Name"`
+	Logger     *logger.Config     `yaml:"Logger"`
+	PostgreSQL *postgresql.Config `yaml:"PostgreSQL"`
 }
 
 func NewDatabase(ctx context.Context, config *Config) (Database, error) {

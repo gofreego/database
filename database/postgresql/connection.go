@@ -13,12 +13,12 @@ import (
 )
 
 type Config struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	Database string
-	SSLMode  string // disable/require/verify-ca/verify-full  ## Note: disable by default
+	Host     string `yaml:"Host"`
+	Port     int    `yaml:"Port"`
+	Username string `yaml:"Username"`
+	Password string `yaml:"Password"`
+	Database string `yaml:"Database"`
+	SSLMode  string `yaml:"SSLMode"` // disable/require/verify-ca/verify-full  ## Note: disable by default
 }
 
 func NewConnection(ctx context.Context, conf *Config) (*sql.DB, error) {
