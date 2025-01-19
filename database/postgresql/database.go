@@ -17,7 +17,7 @@ func NewDatabase(ctx context.Context, conf *Config) (*Database, error) {
 	if conf == nil {
 		return nil, dberrors.NewError(dberrors.ErrInvalidConfig, "No config provided for Database.PostgreSQL", nil)
 	}
-	conn, err := newConnection(ctx, conf)
+	conn, err := NewConnection(ctx, conf)
 	if err != nil {
 		return nil, err
 	}

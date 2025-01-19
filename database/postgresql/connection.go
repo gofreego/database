@@ -21,7 +21,7 @@ type Config struct {
 	SSLMode  string // disable/require/verify-ca/verify-full  ## Note: disable by default
 }
 
-func newConnection(ctx context.Context, conf *Config) (*sql.DB, error) {
+func NewConnection(ctx context.Context, conf *Config) (*sql.DB, error) {
 	if conf.SSLMode == "" {
 		conf.SSLMode = "disable"
 	}
