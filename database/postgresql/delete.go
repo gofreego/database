@@ -11,7 +11,7 @@ import (
 	"github.com/gofreego/goutils/logger"
 )
 
-func (d *Database) SoftDeleteByID(ctx context.Context, record dbcommon.Record, options ...any) error {
+func (d *Database) SoftDeleteByID(ctx context.Context, record dbcommon.SQLRecord, options ...any) error {
 	prepareName := dbcommon.GetPrepareName(options...)
 	var result sql.Result
 	var err error
@@ -45,7 +45,7 @@ func (d *Database) SoftDeleteByID(ctx context.Context, record dbcommon.Record, o
 	return nil
 }
 
-func (d *Database) DeleteByID(ctx context.Context, record dbcommon.Record, options ...any) error {
+func (d *Database) DeleteByID(ctx context.Context, record dbcommon.SQLRecord, options ...any) error {
 	prepareName := dbcommon.GetPrepareName(options...)
 	var result sql.Result
 	var err error
@@ -78,7 +78,7 @@ func (d *Database) DeleteByID(ctx context.Context, record dbcommon.Record, optio
 	}
 	return nil
 }
-func (d *Database) DeleteByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) (int64, error) {
+func (d *Database) DeleteByFilter(ctx context.Context, record dbcommon.SQLRecord, filter dbcommon.Filter, options ...any) (int64, error) {
 	prepareName := dbcommon.GetPrepareName(options...)
 	var result sql.Result
 	var err error

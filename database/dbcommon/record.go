@@ -1,6 +1,6 @@
 package dbcommon
 
-type Record interface {
+type SQLRecord interface {
 	Table() *Table
 	InsertColumnsValues() ([]string, []interface{})
 	UpdateColumnsValues() ([]string, []interface{})
@@ -10,7 +10,7 @@ type Record interface {
 	ScanRow(row Row) error
 }
 
-type Records interface {
+type SQLRecords interface {
 	Table() *Table
 	SelectColumns() []string
 	ScanRows(row Rows) error

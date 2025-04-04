@@ -11,7 +11,7 @@ import (
 	"github.com/gofreego/goutils/logger"
 )
 
-func (d *Database) Count(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) (int, error) {
+func (d *Database) Count(ctx context.Context, record dbcommon.SQLRecord, filter dbcommon.Filter, options ...any) (int, error) {
 	prepareName := dbcommon.GetPrepareName(options)
 	var row *sql.Row
 	var err error

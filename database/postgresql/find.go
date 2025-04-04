@@ -13,7 +13,7 @@ import (
 	"github.com/gofreego/goutils/logger"
 )
 
-func (d *Database) FindOneByID(ctx context.Context, record dbcommon.Record, options ...any) error {
+func (d *Database) FindOneByID(ctx context.Context, record dbcommon.SQLRecord, options ...any) error {
 	var row *sql.Row
 	prepareName := dbcommon.GetPrepareName(options...)
 	if prepareName != "" {
@@ -45,7 +45,7 @@ func (d *Database) FindOneByID(ctx context.Context, record dbcommon.Record, opti
 	return nil
 }
 
-func (d *Database) FindOneByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) error {
+func (d *Database) FindOneByFilter(ctx context.Context, record dbcommon.SQLRecord, filter dbcommon.Filter, options ...any) error {
 	var row *sql.Row
 	prepareName := dbcommon.GetPrepareName(options...)
 	if prepareName != "" {
@@ -81,7 +81,7 @@ func (d *Database) FindOneByFilter(ctx context.Context, record dbcommon.Record, 
 	return nil
 }
 
-func (d *Database) FindAll(ctx context.Context, record dbcommon.Records, filter dbcommon.Filter, options ...any) error {
+func (d *Database) FindAll(ctx context.Context, record dbcommon.SQLRecords, filter dbcommon.Filter, options ...any) error {
 	var rows *sql.Rows
 	var err error
 	var values []interface{}

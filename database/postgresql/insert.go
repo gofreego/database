@@ -15,7 +15,7 @@ import (
 /*
 Insert a record into the postgresql database
 */
-func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options ...any) error {
+func (d *Database) Insert(ctx context.Context, record dbcommon.SQLRecord, options ...any) error {
 	prepareName := dbcommon.GetPrepareName(options...)
 	columns, values := record.InsertColumnsValues()
 	var result *sql.Row
@@ -55,7 +55,7 @@ func (d *Database) Insert(ctx context.Context, record dbcommon.Record, options .
 }
 
 // InsertMany inserts multiple records of the same table into the database
-func (d *Database) InsertMany(ctx context.Context, records []dbcommon.Record, options ...any) error {
+func (d *Database) InsertMany(ctx context.Context, records []dbcommon.SQLRecord, options ...any) error {
 	if len(records) == 0 {
 		return nil
 	}
@@ -84,7 +84,7 @@ func recordToInsertQuery(table string, columns []string) string {
 	return "INSERT INTO " + table + " (" + columnsStr + ") VALUES (" + valuesStr + ") RETURNING id"
 }
 
-func recordsToInsertManyQuery(table *dbcommon.Table, records []dbcommon.Record) (string, []any) {
+func recordsToInsertManyQuery(table *dbcommon.Table, records []dbcommon.SQLRecord) (string, []any) {
 	columnsStr := ""
 	valuesStr := ""
 	valueNumber := 1

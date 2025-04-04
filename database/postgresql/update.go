@@ -12,7 +12,7 @@ import (
 	"github.com/gofreego/goutils/logger"
 )
 
-func (d *Database) UpdateByID(ctx context.Context, record dbcommon.Record, options ...any) error {
+func (d *Database) UpdateByID(ctx context.Context, record dbcommon.SQLRecord, options ...any) error {
 	columns, values := record.UpdateColumnsValues()
 	prepareName := dbcommon.GetPrepareName(options)
 	values = append(values, record.ID())
@@ -51,7 +51,7 @@ func (d *Database) UpdateByID(ctx context.Context, record dbcommon.Record, optio
 	return nil
 }
 
-func (d *Database) UpdateByFilter(ctx context.Context, record dbcommon.Record, filter dbcommon.Filter, options ...any) (int64, error) {
+func (d *Database) UpdateByFilter(ctx context.Context, record dbcommon.SQLRecord, filter dbcommon.Filter, options ...any) (int64, error) {
 	columns, values := record.UpdateColumnsValues()
 	prepareName := dbcommon.GetPrepareName(options)
 	var result sql.Result
