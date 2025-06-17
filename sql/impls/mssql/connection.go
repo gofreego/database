@@ -16,22 +16,30 @@ type Config struct {
 	Database string `yaml:"Database" json:"Database"`
 }
 
-type Connection struct {
+type MssqlDatabase struct {
 	db *sql.DB
 }
 
-func NewConnection(ctx context.Context, config *Config) (*Connection, error) {
+func NewConnection(ctx context.Context, config *Config) (*sql.DB, error) {
 	db, err := sql.Open("mssql", fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s", config.Host, config.Port, config.User, config.Password, config.Database))
 	if err != nil {
 		return nil, err
 	}
-	return &Connection{db: db}, nil
+	return db, nil
 }
 
-func (c *Connection) Ping(ctx context.Context) error {
+func NewMssqlDatabase(ctx context.Context, config *Config) (*MssqlDatabase, error) {
+	db, err := NewConnection(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	return &MssqlDatabase{db: db}, nil
+}
+
+func (c *MssqlDatabase) Ping(ctx context.Context) error {
 	return c.db.PingContext(ctx)
 }
 
-func (c *Connection) Close(ctx context.Context) error {
+func (c *MssqlDatabase) Close(ctx context.Context) error {
 	return c.db.Close()
 }

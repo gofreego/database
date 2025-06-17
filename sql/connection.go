@@ -12,12 +12,12 @@ import (
 type DBName string
 
 const (
-	DBNamePostgreSQL DBName = "postgresql"
-	DBNameMySQL      DBName = "mysql"
-	DBNameMSSQL      DBName = "mssql"
+	PostgreSQL DBName = "postgresql"
+	MySQL      DBName = "mysql"
+	MSSQL      DBName = "mssql"
 )
 
-type Connection interface {
+type SQLDatabase interface {
 	Ping(ctx context.Context) error
 	Close(ctx context.Context) error
 }
@@ -29,14 +29,14 @@ type Config struct {
 	MSSQL      *mssql.Config      `yaml:"MSSQL" json:"MSSQL"`
 }
 
-func NewConnection(ctx context.Context, config *Config) (Connection, error) {
+func NewSQLDatabase(ctx context.Context, config *Config) (SQLDatabase, error) {
 	switch config.Name {
-	case DBNamePostgreSQL:
-		return postgresql.NewConnection(ctx, config.PostgreSQL)
-	case DBNameMySQL:
-		return mysql.NewConnection(ctx, config.MySQL)
-	case DBNameMSSQL:
-		return mssql.NewConnection(ctx, config.MSSQL)
+	case PostgreSQL:
+		return postgresql.NewPostgresqlDatabase(ctx, config.PostgreSQL)
+	case MySQL:
+		return mysql.NewMysqlDatabase(ctx, config.MySQL)
+	case MSSQL:
+		return mssql.NewMssqlDatabase(ctx, config.MSSQL)
 	default:
 		return nil, sqlerror.ErrInvalidConfig
 	}

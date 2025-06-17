@@ -3,13 +3,14 @@ package migrator
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
-	"github.com/gofreego/database/database"
-	"github.com/gofreego/database/database/postgresql"
+	sqldb "github.com/gofreego/database/sql"
+	internalmysql "github.com/gofreego/database/sql/impls/mysql"
+	"github.com/gofreego/database/sql/impls/postgresql"
 	"github.com/gofreego/goutils/logger"
 	"github.com/golang-migrate/migrate/v4"
 	migrationdatabase "github.com/golang-migrate/migrate/v4/database"
+	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/file"
 )
@@ -19,14 +20,10 @@ const (
 	ACTION_DOWN = "DOWN"
 )
 
-type MigrationConfig struct {
+type Config struct {
+	Database  sqldb.Config
 	FilesPath string `yaml:"FilesPath"`
 	Action    string `yaml:"Action"` // UP | DOWN
-}
-
-type Config interface {
-	GetMigrationConfig() *MigrationConfig
-	GetDatabaseConfig() *database.Config
 }
 
 type Migrator struct {
@@ -40,19 +37,14 @@ func NewMigrator(ctx context.Context, conf Config) *Migrator {
 
 func (app *Migrator) Run(ctx context.Context) error {
 	logger.Info(ctx, "MigrationScript started...")
-	if app.conf.GetMigrationConfig() == nil || app.conf.GetDatabaseConfig() == nil {
-		logger.Panic(ctx, "MigrationScript: invalid config, migration or database config is nil")
-		return fmt.Errorf("MigrationScript: invalid config, migration or database config is nil")
-
-	}
-	fileSource, err := (&file.File{}).Open(app.conf.GetMigrationConfig().FilesPath)
+	fileSource, err := (&file.File{}).Open(app.conf.FilesPath)
 	if err != nil {
-		logger.Panic(ctx, "error opening migration source: %v", err)
+		logger.Panic(ctx, "error opening migration source directory: %v", err)
 		return err
 	}
 	defer fileSource.Close()
-	conn, db, dbname := getDBDriver(ctx, app.conf.GetDatabaseConfig())
-	if app.conf.GetMigrationConfig().Action == ACTION_DOWN {
+	conn, db, dbname := getDBDriver(ctx, &app.conf.Database)
+	if app.conf.Action == ACTION_DOWN {
 		result, err := conn.Exec("update schema_migrations  set dirty  = false where dirty = true;")
 		if err != nil {
 			logger.Panic(ctx, "failed to set dirty false, Err: %s", err.Error())
@@ -70,7 +62,7 @@ func (app *Migrator) Run(ctx context.Context) error {
 		return err
 	}
 
-	switch app.conf.GetMigrationConfig().Action {
+	switch app.conf.Action {
 	case ACTION_UP:
 		// Apply the migration
 		if err := app.m.Up(); err != nil {
@@ -91,7 +83,7 @@ func (app *Migrator) Run(ctx context.Context) error {
 			return err
 		}
 	default:
-		logger.Panic(ctx, "invalid action current: `%s` Expected : `%s` | `%s`", app.conf.GetMigrationConfig().Action, ACTION_UP, ACTION_DOWN)
+		logger.Panic(ctx, "invalid action current: `%s` Expected : `%s` | `%s`", app.conf.Action, ACTION_UP, ACTION_DOWN)
 	}
 	logger.Info(ctx, "Migration applied successfully!")
 	return nil
@@ -105,9 +97,9 @@ func (app *Migrator) Name() string {
 	return "MigrationScript"
 }
 
-func getDBDriver(ctx context.Context, conf *database.Config) (*sql.DB, migrationdatabase.Driver, string) {
+func getDBDriver(ctx context.Context, conf *sqldb.Config) (*sql.DB, migrationdatabase.Driver, string) {
 	switch conf.Name {
-	case database.PostgreSQL:
+	case sqldb.PostgreSQL:
 		conn, err := postgresql.NewConnection(ctx, conf.PostgreSQL)
 		if err != nil {
 			logger.Panic(ctx, "error creating postgres connection: %v", err)
@@ -117,8 +109,18 @@ func getDBDriver(ctx context.Context, conf *database.Config) (*sql.DB, migration
 			logger.Panic(ctx, "error creating postgres driver: %v", err)
 		}
 		return conn, driver, conf.PostgreSQL.Database
+	case sqldb.MySQL:
+		conn, err := internalmysql.NewConnection(ctx, conf.MySQL)
+		if err != nil {
+			logger.Panic(ctx, "error creating mysql connection: %v", err)
+		}
+		driver, err := mysql.WithInstance(conn, &mysql.Config{DatabaseName: conf.MySQL.Database})
+		if err != nil {
+			logger.Panic(ctx, "error creating mysql driver: %v", err)
+		}
+		return conn, driver, conf.MySQL.Database
+	default:
+		logger.Panic(ctx, "invalid repository name: current: %s , Expected: %s", conf.Name, sqldb.PostgreSQL)
+		return nil, nil, ""
 	}
-
-	logger.Panic(ctx, "invalid repository name: current: %s , Expected: %s", conf.Name, database.PostgreSQL)
-	return nil, nil, ""
 }

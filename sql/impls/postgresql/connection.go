@@ -16,22 +16,30 @@ type Config struct {
 	Database string `yaml:"Database" json:"Database"`
 }
 
-type Connection struct {
+type PostgresqlDatabase struct {
 	db *sql.DB
 }
 
-func NewConnection(ctx context.Context, config *Config) (*Connection, error) {
+func NewConnection(ctx context.Context, config *Config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", config.Host, config.Port, config.User, config.Password, config.Database))
 	if err != nil {
 		return nil, err
 	}
-	return &Connection{db: db}, nil
+	return db, nil
 }
 
-func (c *Connection) Ping(ctx context.Context) error {
+func NewPostgresqlDatabase(ctx context.Context, config *Config) (*PostgresqlDatabase, error) {
+	db, err := NewConnection(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	return &PostgresqlDatabase{db: db}, nil
+}
+
+func (c *PostgresqlDatabase) Ping(ctx context.Context) error {
 	return c.db.PingContext(ctx)
 }
 
-func (c *Connection) Close(ctx context.Context) error {
+func (c *PostgresqlDatabase) Close(ctx context.Context) error {
 	return c.db.Close()
 }
