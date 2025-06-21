@@ -1,0 +1,55 @@
+package unimplemented
+
+import (
+	"context"
+	"errors"
+
+	"github.com/gofreego/database/sql"
+)
+
+type Unimplemented struct {
+}
+
+func (u *Unimplemented) Ping(ctx context.Context) error {
+	return errors.New("Ping method is not implemented")
+}
+
+func (u *Unimplemented) Close(ctx context.Context) error {
+	return errors.New("Close method is not implemented")
+}
+
+func (u *Unimplemented) Insert(ctx context.Context, record sql.Record, options ...sql.Options) error {
+	return errors.New("Insert method is not implemented")
+}
+
+func (u *Unimplemented) InsertMany(ctx context.Context, records []sql.Record, options ...sql.Options) (int64, error) {
+	return 0, errors.New("InsertMany method is not implemented")
+}
+
+func (u *Unimplemented) GetByID(ctx context.Context, record sql.Record, options ...sql.Options) error {
+	return errors.New("GetByID method is not implemented")
+}
+
+func (u *Unimplemented) GetByFilter(ctx context.Context, filter sql.Filter, record sql.Record, options ...sql.Options) error {
+	return errors.New("GetByFilter method is not implemented")
+}
+
+func (u *Unimplemented) Update(ctx context.Context, record sql.Record, options ...sql.Options) error {
+	return errors.New("Update method is not implemented")
+}
+
+func (u *Unimplemented) UpdateMany(ctx context.Context, records []sql.Record, options ...sql.Options) error {
+	return errors.New("UpdateMany method is not implemented")
+}
+
+func (u *Unimplemented) UpdateByCondition(ctx context.Context, condition *sql.Condition, updates *sql.Updates, options ...sql.Options) error {
+	return errors.New("UpdateByCondition method is not implemented")
+}
+
+func (u *Unimplemented) DeleteByID(ctx context.Context, id int64, options ...sql.Options) error {
+	return errors.New("DeleteByID method is not implemented")
+}
+
+func (u *Unimplemented) DeleteByCondition(ctx context.Context, condition *sql.Condition, options ...sql.Options) error {
+	return errors.New("DeleteByCondition method is not implemented")
+}

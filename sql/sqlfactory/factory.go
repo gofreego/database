@@ -1,12 +1,12 @@
-package sql
+package sqlfactory
 
 import (
 	"context"
 
+	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mssql"
 	"github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
-	"github.com/gofreego/database/sql/sqlerror"
 )
 
 type DBName string
@@ -17,11 +17,6 @@ const (
 	MSSQL      DBName = "mssql"
 )
 
-type SQLDatabase interface {
-	Ping(ctx context.Context) error
-	Close(ctx context.Context) error
-}
-
 type Config struct {
 	Name       DBName             `yaml:"Name" json:"Name"`
 	PostgreSQL *postgresql.Config `yaml:"PostgreSQL" json:"PostgreSQL"`
@@ -29,7 +24,7 @@ type Config struct {
 	MSSQL      *mssql.Config      `yaml:"MSSQL" json:"MSSQL"`
 }
 
-func NewSQLDatabase(ctx context.Context, config *Config) (SQLDatabase, error) {
+func NewSQLDatabase(ctx context.Context, config *Config) (sql.SQLDatabase, error) {
 	switch config.Name {
 	case PostgreSQL:
 		return postgresql.NewPostgresqlDatabase(ctx, config.PostgreSQL)
@@ -38,6 +33,6 @@ func NewSQLDatabase(ctx context.Context, config *Config) (SQLDatabase, error) {
 	case MSSQL:
 		return mssql.NewMssqlDatabase(ctx, config.MSSQL)
 	default:
-		return nil, sqlerror.ErrInvalidConfig
+		return nil, sql.ErrInvalidConfig
 	}
 }

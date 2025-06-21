@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	sqldb "github.com/gofreego/database/sql"
 	internalmysql "github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
+	"github.com/gofreego/database/sql/sqlfactory"
 	"github.com/gofreego/goutils/logger"
 	"github.com/golang-migrate/migrate/v4"
 	migrationdatabase "github.com/golang-migrate/migrate/v4/database"
@@ -21,7 +21,7 @@ const (
 )
 
 type Config struct {
-	Database  sqldb.Config
+	Database  sqlfactory.Config
 	FilesPath string `yaml:"FilesPath"`
 	Action    string `yaml:"Action"` // UP | DOWN
 }
@@ -97,9 +97,9 @@ func (app *Migrator) Name() string {
 	return "MigrationScript"
 }
 
-func getDBDriver(ctx context.Context, conf *sqldb.Config) (*sql.DB, migrationdatabase.Driver, string) {
+func getDBDriver(ctx context.Context, conf *sqlfactory.Config) (*sql.DB, migrationdatabase.Driver, string) {
 	switch conf.Name {
-	case sqldb.PostgreSQL:
+	case sqlfactory.PostgreSQL:
 		conn, err := postgresql.NewConnection(ctx, conf.PostgreSQL)
 		if err != nil {
 			logger.Panic(ctx, "error creating postgres connection: %v", err)
@@ -109,7 +109,7 @@ func getDBDriver(ctx context.Context, conf *sqldb.Config) (*sql.DB, migrationdat
 			logger.Panic(ctx, "error creating postgres driver: %v", err)
 		}
 		return conn, driver, conf.PostgreSQL.Database
-	case sqldb.MySQL:
+	case sqlfactory.MySQL:
 		conn, err := internalmysql.NewConnection(ctx, conf.MySQL)
 		if err != nil {
 			logger.Panic(ctx, "error creating mysql connection: %v", err)
@@ -120,7 +120,7 @@ func getDBDriver(ctx context.Context, conf *sqldb.Config) (*sql.DB, migrationdat
 		}
 		return conn, driver, conf.MySQL.Database
 	default:
-		logger.Panic(ctx, "invalid repository name: current: %s , Expected: %s", conf.Name, sqldb.PostgreSQL)
+		logger.Panic(ctx, "invalid repository name: current: %s , Expected: %s", conf.Name, sqlfactory.PostgreSQL)
 		return nil, nil, ""
 	}
 }

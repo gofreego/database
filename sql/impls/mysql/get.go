@@ -1,0 +1,42 @@
+package mysql
+
+import (
+	"context"
+	db "database/sql"
+	"fmt"
+	"strings"
+
+	"github.com/gofreego/database/sql"
+	"github.com/gofreego/database/sql/impls/mysql/parser"
+)
+
+func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options ...sql.Options) error {
+	opt := sql.GetOptions(options...)
+	var err error
+	if opt.PreparedName != "" {
+		var stmt *db.Stmt
+		var ok bool
+
+		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
+			query := fmt.Sprintf("SELECT %s FROM %s WHERE id = ?", strings.Join(record.Columns(), ", "), parser.ParseTable(record.Table()))
+			stmt, err = c.db.PrepareContext(ctx, query)
+			if err != nil {
+				return handleError(err)
+			}
+			c.preparedStatements[opt.PreparedName] = stmt
+		}
+
+		row := stmt.QueryRowContext(ctx, record.ID())
+		if err = row.Err(); err != nil {
+			return handleError(err)
+		}
+		return handleError(record.Scan(row))
+	}
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", parser.ParseTable(record.Table()))
+	row := c.db.QueryRowContext(ctx, query, record.ID())
+	if row.Err() != nil {
+		return handleError(row.Err())
+	}
+	return handleError(record.Scan(row))
+}

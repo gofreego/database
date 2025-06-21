@@ -2,10 +2,11 @@ package mssql
 
 import (
 	"context"
-	"database/sql"
+	db "database/sql"
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/gofreego/database/sql/impls/unimplemented"
 )
 
 type Config struct {
@@ -17,11 +18,12 @@ type Config struct {
 }
 
 type MssqlDatabase struct {
-	db *sql.DB
+	db *db.DB
+	unimplemented.Unimplemented
 }
 
-func NewConnection(ctx context.Context, config *Config) (*sql.DB, error) {
-	db, err := sql.Open("mssql", fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s", config.Host, config.Port, config.User, config.Password, config.Database))
+func NewConnection(ctx context.Context, config *Config) (*db.DB, error) {
+	db, err := db.Open("mssql", fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s", config.Host, config.Port, config.User, config.Password, config.Database))
 	if err != nil {
 		return nil, err
 	}

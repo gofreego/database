@@ -2,10 +2,11 @@ package mysql
 
 import (
 	"context"
-	"database/sql"
+	db "database/sql"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gofreego/database/sql/impls/unimplemented"
 )
 
 type Config struct {
@@ -17,11 +18,13 @@ type Config struct {
 }
 
 type MysqlDatabase struct {
-	db *sql.DB
+	db                 *db.DB
+	preparedStatements map[string]*db.Stmt
+	unimplemented.Unimplemented
 }
 
-func NewConnection(ctx context.Context, config *Config) (*sql.DB, error) {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", config.User, config.Password, config.Host, config.Port, config.Database))
+func NewConnection(ctx context.Context, config *Config) (*db.DB, error) {
+	db, err := db.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", config.User, config.Password, config.Host, config.Port, config.Database))
 	if err != nil {
 		return nil, err
 	}
@@ -29,11 +32,14 @@ func NewConnection(ctx context.Context, config *Config) (*sql.DB, error) {
 }
 
 func NewMysqlDatabase(ctx context.Context, config *Config) (*MysqlDatabase, error) {
-	db, err := NewConnection(ctx, config)
+	conn, err := NewConnection(ctx, config)
 	if err != nil {
 		return nil, err
 	}
-	return &MysqlDatabase{db: db}, nil
+	return &MysqlDatabase{
+		db:                 conn,
+		preparedStatements: make(map[string]*db.Stmt),
+	}, nil
 }
 
 func (c *MysqlDatabase) Ping(ctx context.Context) error {

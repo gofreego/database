@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/gofreego/database/sql/impls/unimplemented"
 	_ "github.com/lib/pq"
 )
 
@@ -18,6 +19,7 @@ type Config struct {
 
 type PostgresqlDatabase struct {
 	db *sql.DB
+	unimplemented.Unimplemented
 }
 
 func NewConnection(ctx context.Context, config *Config) (*sql.DB, error) {

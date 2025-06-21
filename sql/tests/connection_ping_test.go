@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
+	"github.com/gofreego/database/sql/sqlfactory"
 )
 
 /*
@@ -17,7 +17,7 @@ use `make setup-db` to start the database
 func TestNewConnection(t *testing.T) {
 	type args struct {
 		ctx    context.Context
-		config *sql.Config
+		config *sqlfactory.Config
 	}
 	tests := []struct {
 		name    string
@@ -29,8 +29,8 @@ func TestNewConnection(t *testing.T) {
 			name: "postgresql",
 			args: args{
 				ctx: context.Background(),
-				config: &sql.Config{
-					Name: sql.PostgreSQL,
+				config: &sqlfactory.Config{
+					Name: sqlfactory.PostgreSQL,
 					PostgreSQL: &postgresql.Config{
 						Host:     "localhost",
 						Port:     5432,
@@ -47,8 +47,8 @@ func TestNewConnection(t *testing.T) {
 			name: "mysql",
 			args: args{
 				ctx: context.Background(),
-				config: &sql.Config{
-					Name: sql.MySQL,
+				config: &sqlfactory.Config{
+					Name: sqlfactory.MySQL,
 					MySQL: &mysql.Config{
 						Host:     "localhost",
 						Port:     3306,
@@ -64,13 +64,16 @@ func TestNewConnection(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conn, err := sql.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConnection() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if err := conn.Ping(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("Ping() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err := conn.Close(tt.args.ctx); err != nil {
+				t.Errorf("Close() failed: %v", err)
 			}
 		})
 	}
