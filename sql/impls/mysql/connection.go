@@ -47,5 +47,11 @@ func (c *MysqlDatabase) Ping(ctx context.Context) error {
 }
 
 func (c *MysqlDatabase) Close(ctx context.Context) error {
-	return c.db.Close()
+	for _, stmt := range c.preparedStatements {
+		err := stmt.Close()
+		if err != nil {
+			return handleError(err)
+		}
+	}
+	return handleError(c.db.Close())
 }

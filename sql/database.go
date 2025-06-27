@@ -158,7 +158,9 @@ type Filter struct {
 }
 
 type Options struct {
+	// if you want to use the primary database, use this option
 	UsePrimaryDB bool
+	// if you want to prepare the query, use this option
 	PreparedName string
 }
 
