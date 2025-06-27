@@ -38,9 +38,6 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 		return handleError(err)
 	}
 	record.SetID(id)
-	if err != nil {
-		return handleError(err)
-	}
 	return nil
 }
 
