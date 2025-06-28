@@ -13,13 +13,15 @@ const (
 )
 
 type Join struct {
+	Type  JoinType
 	Table *Table
 	On    *Condition
 }
 
 type Table struct {
-	Name string
-	Join []Join
+	Name  string
+	Alias string
+	Join  []Join
 }
 
 func NewTable(name string) *Table {
@@ -111,12 +113,12 @@ func (o *Sort) Fields() []SortField {
 type Operator int
 
 const (
-	Equal Operator = iota
-	NotEqual
-	GreaterThan
-	GreaterThanOrEqual
-	LessThan
-	LessThanOrEqual
+	EQ Operator = iota
+	NEQ
+	GT
+	GTE
+	LT
+	LTE
 	IN
 	NOTIN
 	LIKE
@@ -161,7 +163,7 @@ type Options struct {
 	// if you want to use the primary database, use this option
 	UsePrimaryDB bool
 	// if you want to prepare the query, use this option
-	PreparedName string
+	PreparedName string // It should be unique for each diff type of query
 }
 
 type UpdateField struct {
@@ -189,7 +191,7 @@ type SQLDatabase interface {
 	Close(ctx context.Context) error
 	Insert(ctx context.Context, record Record, options ...Options) error
 	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
-
+	Upsert(ctx context.Context, record Record, options ...Options) error
 	GetByID(ctx context.Context, record Record, options ...Options) error
 	GetByFilter(ctx context.Context, filter Filter, record Record, options ...Options) error
 	// This will update the record with the id of the record
