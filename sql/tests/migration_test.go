@@ -45,18 +45,28 @@ func MigrationUP(ctx context.Context, cfg *sqlfactory.Config) error {
 		// We'll ignore this error and continue
 	}
 
+	filesPath := "./migrations/mysql"
+	if cfg.Name == sqlfactory.PostgreSQL {
+		filesPath = "./migrations/postgresql"
+	}
+
 	migrator := migrator.NewMigrator(ctx, &migrator.Config{
 		Database:  *cfg,
-		FilesPath: "./migrations",
+		FilesPath: filesPath,
 		Action:    migrator.ACTION_UP,
 	})
 	return migrator.Run(ctx)
 }
 
 func MigrationDown(ctx context.Context, cfg *sqlfactory.Config) error {
+	filesPath := "./migrations/mysql"
+	if cfg.Name == sqlfactory.PostgreSQL {
+		filesPath = "./migrations/postgresql"
+	}
+
 	migrator := migrator.NewMigrator(ctx, &migrator.Config{
 		Database:  *cfg,
-		FilesPath: "./migrations",
+		FilesPath: filesPath,
 		Action:    migrator.ACTION_DOWN,
 	})
 	return migrator.Run(ctx)

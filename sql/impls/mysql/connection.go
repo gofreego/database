@@ -24,7 +24,7 @@ type MysqlDatabase struct {
 }
 
 func NewConnection(ctx context.Context, config *Config) (*db.DB, error) {
-	db, err := db.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", config.User, config.Password, config.Host, config.Port, config.Database))
+	db, err := db.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", config.User, config.Password, config.Host, config.Port, config.Database))
 	if err != nil {
 		return nil, err
 	}
