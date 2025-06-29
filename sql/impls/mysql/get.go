@@ -3,8 +3,6 @@ package mysql
 import (
 	"context"
 	db "database/sql"
-	"fmt"
-	"strings"
 
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mysql/parser"
@@ -19,7 +17,7 @@ func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options 
 		var ok bool
 
 		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
-			query := fmt.Sprintf("SELECT %s FROM %s WHERE id = ?", strings.Join(record.Columns(), ", "), parser.ParseTable(record.Table()))
+			query := parser.ParseGetByIDQuery(record)
 			logger.Debug(ctx, "GetByID query: %s", query)
 			stmt, err = c.db.PrepareContext(ctx, query)
 			if err != nil {
@@ -34,8 +32,7 @@ func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options 
 		}
 		return handleError(record.Scan(row))
 	}
-
-	query := fmt.Sprintf("SELECT %s FROM %s WHERE id = ?", strings.Join(record.Columns(), ", "), parser.ParseTable(record.Table()))
+	query := parser.ParseGetByIDQuery(record)
 	logger.Debug(ctx, "GetByID query: %s", query)
 	row := c.db.QueryRowContext(ctx, query, record.ID())
 	if row.Err() != nil {
