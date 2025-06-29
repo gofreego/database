@@ -87,17 +87,8 @@ func TestMigration(t *testing.T) {
 		{
 			name: "postgresql up",
 			args: args{
-				ctx: context.Background(),
-				config: &sqlfactory.Config{
-					Name: sqlfactory.PostgreSQL,
-					PostgreSQL: &postgresql.Config{
-						Host:     "localhost",
-						Port:     5432,
-						User:     "root",
-						Password: "root@1234",
-						Database: "postgres",
-					},
-				},
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
 				action: migrator.ACTION_UP,
 			},
 			wantErr: false,
@@ -106,17 +97,8 @@ func TestMigration(t *testing.T) {
 		{
 			name: "postgresql down",
 			args: args{
-				ctx: context.Background(),
-				config: &sqlfactory.Config{
-					Name: sqlfactory.PostgreSQL,
-					PostgreSQL: &postgresql.Config{
-						Host:     "localhost",
-						Port:     5432,
-						User:     "root",
-						Password: "root@1234",
-						Database: "postgres",
-					},
-				},
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
 				action: migrator.ACTION_DOWN,
 			},
 			wantErr: false,
@@ -125,17 +107,8 @@ func TestMigration(t *testing.T) {
 		{
 			name: "mysql up",
 			args: args{
-				ctx: context.Background(),
-				config: &sqlfactory.Config{
-					Name: sqlfactory.MySQL,
-					MySQL: &mysql.Config{
-						Host:     "localhost",
-						Port:     3306,
-						User:     "root",
-						Password: "root@1234",
-						Database: "mysql",
-					},
-				},
+				ctx:    context.Background(),
+				config: &mysqlConfig,
 				action: migrator.ACTION_UP,
 			},
 			wantErr: false,
@@ -144,17 +117,8 @@ func TestMigration(t *testing.T) {
 		{
 			name: "mysql down",
 			args: args{
-				ctx: context.Background(),
-				config: &sqlfactory.Config{
-					Name: sqlfactory.MySQL,
-					MySQL: &mysql.Config{
-						Host:     "localhost",
-						Port:     3306,
-						User:     "root",
-						Password: "root@1234",
-						Database: "mysql",
-					},
-				},
+				ctx:    context.Background(),
+				config: &mysqlConfig,
 				action: migrator.ACTION_DOWN,
 			},
 			wantErr: false,

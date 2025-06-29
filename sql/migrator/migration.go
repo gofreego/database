@@ -3,6 +3,7 @@ package migrator
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	internalmysql "github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
@@ -38,14 +39,17 @@ func NewMigrator(ctx context.Context, conf *Config) *Migrator {
 }
 
 func (app *Migrator) Run(ctx context.Context) error {
-	logger.Info(ctx, "MigrationScript started...")
+	logger.Info(ctx, "MigrationScript started for %s with action: %s", app.conf.Database.Name, app.conf.Action)
 	fileSource, err := (&file.File{}).Open(app.conf.FilesPath)
 	if err != nil {
 		logger.Error(ctx, "error opening migration source directory:%s, error: %s", app.conf.FilesPath, err.Error())
 		return err
 	}
 	defer fileSource.Close()
-	conn, db, dbname := getDBDriver(ctx, &app.conf.Database)
+	conn, db, dbname, err := getDBDriver(ctx, &app.conf.Database)
+	if err != nil {
+		return err
+	}
 	if app.conf.Action == ACTION_DOWN {
 		result, err := conn.Exec("update schema_migrations  set dirty  = false where dirty = true;")
 		if err != nil {
@@ -99,30 +103,34 @@ func (app *Migrator) Name() string {
 	return "MigrationScript"
 }
 
-func getDBDriver(ctx context.Context, conf *sqlfactory.Config) (*sql.DB, migrationdatabase.Driver, string) {
+func getDBDriver(ctx context.Context, conf *sqlfactory.Config) (*sql.DB, migrationdatabase.Driver, string, error) {
 	switch conf.Name {
 	case sqlfactory.PostgreSQL:
 		conn, err := postgresql.NewConnection(ctx, conf.PostgreSQL)
 		if err != nil {
 			logger.Error(ctx, "error creating postgres connection: %v", err)
+			return nil, nil, "", err
 		}
 		driver, err := postgres.WithInstance(conn, &postgres.Config{DatabaseName: conf.PostgreSQL.Database})
 		if err != nil {
 			logger.Error(ctx, "error creating postgres driver: %v", err)
+			return nil, nil, "", err
 		}
-		return conn, driver, conf.PostgreSQL.Database
+		return conn, driver, conf.PostgreSQL.Database, nil
 	case sqlfactory.MySQL:
 		conn, err := internalmysql.NewConnection(ctx, conf.MySQL)
 		if err != nil {
 			logger.Error(ctx, "error creating mysql connection: %v", err)
+			return nil, nil, "", err
 		}
 		driver, err := mysql.WithInstance(conn, &mysql.Config{DatabaseName: conf.MySQL.Database})
 		if err != nil {
 			logger.Error(ctx, "error creating mysql driver: %v", err)
+			return nil, nil, "", err
 		}
-		return conn, driver, conf.MySQL.Database
+		return conn, driver, conf.MySQL.Database, nil
 	default:
 		logger.Error(ctx, "invalid repository name: current: %s , Expected: %s", conf.Name, sqlfactory.PostgreSQL)
-		return nil, nil, ""
+		return nil, nil, "", errors.New("invalid repository name")
 	}
 }

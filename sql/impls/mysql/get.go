@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mysql/parser"
+	"github.com/gofreego/goutils/logger"
 )
 
 func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options ...sql.Options) error {
@@ -19,6 +20,7 @@ func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options 
 
 		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
 			query := fmt.Sprintf("SELECT %s FROM %s WHERE id = ?", strings.Join(record.Columns(), ", "), parser.ParseTable(record.Table()))
+			logger.Debug(ctx, "GetByID query: %s", query)
 			stmt, err = c.db.PrepareContext(ctx, query)
 			if err != nil {
 				return handleError(err)
@@ -33,7 +35,8 @@ func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options 
 		return handleError(record.Scan(row))
 	}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", parser.ParseTable(record.Table()))
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE id = ?", strings.Join(record.Columns(), ", "), parser.ParseTable(record.Table()))
+	logger.Debug(ctx, "GetByID query: %s", query)
 	row := c.db.QueryRowContext(ctx, query, record.ID())
 	if row.Err() != nil {
 		return handleError(row.Err())
