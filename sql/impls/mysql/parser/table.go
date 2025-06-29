@@ -15,9 +15,12 @@ var (
 	}
 )
 
-func ParseTable(table *sql.Table) string {
-
-	return table.Name + getAlias(table.Alias) + parseJoin(table.Join)
+func parseTableName(table *sql.Table) (string, error) {
+	joinString, err := parseJoin(table.Join)
+	if err != nil {
+		return "", nil
+	}
+	return table.Name + getAlias(table.Alias) + joinString, nil
 }
 
 func getAlias(alias string) string {
@@ -27,13 +30,21 @@ func getAlias(alias string) string {
 	return " " + alias
 }
 
-func parseJoin(join []sql.Join) string {
+func parseJoin(join []sql.Join) (string, error) {
 	if len(join) == 0 {
-		return ""
+		return "", nil
 	}
 	joins := ""
 	for _, j := range join {
-		joins += fmt.Sprintf(" %s %s ON %s", joinTypes[j.Type], ParseTable(j.Table), parseCondition(j.On))
+		conditionString, _, err := parseCondition(j.On)
+		if err != nil {
+			return "", err
+		}
+		tableName, err := parseTableName(j.Table)
+		if err != nil {
+			return "", err
+		}
+		joins += fmt.Sprintf(" %s %s ON %s", joinTypes[j.Type], tableName, conditionString)
 	}
-	return joins
+	return joins, nil
 }

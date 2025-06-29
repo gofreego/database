@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,39 +9,65 @@ import (
 )
 
 const (
-	insertQuery  = "INSERT INTO %s (%s) VALUES %s"
-	upsertQuery  = "INSERT INTO %s (%s) VALUES %s ON DUPLICATE KEY UPDATE %s"
-	updateSyntax = "%s = VALUES(%s)"
+	insertQuery = "INSERT INTO %s (%s) VALUES %s"
+	upsertQuery = "INSERT INTO %s (%s) VALUES %s ON DUPLICATE KEY UPDATE %s"
 )
 
-func ParseInsertQuery(record ...sql.Record) string {
+func ParseInsertQuery(record ...sql.Record) (string, []any, error) {
 	if len(record) == 0 {
-		return ""
+		return "", nil, errors.New("no record provided")
 	}
-	return fmt.Sprintf(insertQuery, ParseTable(record[0].Table()), strings.Join(record[0].Columns(), ", "), getValuesPlaceHolders(record...))
+	tableName, err := parseTableName(record[0].Table())
+	if err != nil {
+		return "", nil, err
+	}
+	placehodlers, values := getValuesPlaceHolders(record...)
+	return fmt.Sprintf(insertQuery, tableName, parseColumns(record[0]), placehodlers), values, nil
 }
 
-func getValuesPlaceHolders(record ...sql.Record) string {
+func ParseUpsertQuery(records ...sql.Record) (string, []any, error) {
+	if len(records) == 0 {
+		return "", nil, errors.New("no record provided")
+	}
+	tableName, err := parseTableName(records[0].Table())
+	if err != nil {
+		return "", nil, err
+	}
+	placehodlers, values := getValuesPlaceHolders(records...)
+	return fmt.Sprintf(upsertQuery, tableName, parseColumns(records[0]), placehodlers, parseUpdates(records[0])), values, nil
+}
+
+/*
+Helper functions
+*/
+
+func parseColumns(record sql.Record) string {
+	columns := []string{}
+	for _, col := range record.Columns() {
+		if col == "id" {
+			continue
+		}
+		columns = append(columns, col)
+	}
+	return strings.Join(columns, ", ")
+}
+
+func getValuesPlaceHolders(record ...sql.Record) (string, []any) {
 	placeholder := getPlaceHolders(len(record[0].Columns()))
 	valuesPlaceHolders := make([]string, len(record))
+	values := make([]any, 0)
 	for i := range record {
 		valuesPlaceHolders[i] = fmt.Sprintf("(%s)", placeholder)
+		values = append(values, record[i].Values()...)
 	}
-	return strings.Join(valuesPlaceHolders, ", ")
-}
-
-func ParseUpsertQuery(records ...sql.Record) string {
-	if len(records) == 0 {
-		return ""
-	}
-	return fmt.Sprintf(upsertQuery, ParseTable(records[0].Table()), strings.Join(records[0].Columns(), ", "), getValuesPlaceHolders(records...), parseUpdates(records[0]))
+	return strings.Join(valuesPlaceHolders, ", "), values
 }
 
 func parseUpdates(record sql.Record) string {
 	updates := []string{}
 
 	for _, col := range record.Columns() {
-		updates = append(updates, fmt.Sprintf(updateSyntax, col, col))
+		updates = append(updates, fmt.Sprintf("%s = VALUES(%s)", col, col))
 	}
 	return strings.Join(updates, ", ")
 }

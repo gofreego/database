@@ -8,6 +8,11 @@ import (
 	"github.com/gofreego/database/sql/impls/mysql/parser"
 )
 
+/*
+Insert inserts a record into the database.
+Returns an error if any.
+It will set the ID of the record to the last inserted ID.
+*/
 func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
@@ -15,20 +20,30 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 	if opt.PreparedName != "" {
 		var stmt *db.Stmt
 		var ok bool
+		var query string
+		var values []any
 		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
-			stmt, err = c.db.PrepareContext(ctx, parser.ParseInsertQuery(record))
+			query, values, err = parser.ParseInsertQuery(record)
+			if err != nil {
+				return handleError(err)
+			}
+			stmt, err = c.db.PrepareContext(ctx, query)
 			if err != nil {
 				return handleError(err)
 			}
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
 
-		res, err = stmt.ExecContext(ctx, record.Values()...)
+		res, err = stmt.ExecContext(ctx, values...)
 		if err != nil {
 			return handleError(err)
 		}
 	} else {
-		res, err = c.db.ExecContext(ctx, parser.ParseInsertQuery(record), record.Values()...)
+		query, values, err := parser.ParseInsertQuery(record)
+		if err != nil {
+			return handleError(err)
+		}
+		res, err = c.db.ExecContext(ctx, query, values...)
 		if err != nil {
 			return handleError(err)
 		}
@@ -41,21 +56,12 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 	return nil
 }
 
-func getValues(records []sql.Record) []any {
-	values := make([]any, 0)
-	for _, record := range records {
-		values = append(values, record.Values()...)
-	}
-
-	return values
-}
-
 /*
 InsertMany inserts multiple records into the database.
 Returns the number of rows affected and an error if any.
 Returns 0, nil if no records are provided.
 Returns 0, sql.ErrNoRecordInserted if no records are inserted.
-Query will not be prepared, if you want to prepare the query, use Insert instead.
+Query will not be prepared because of variable length of records, if you want to prepare the query, use Insert instead.
 */
 func (c *MysqlDatabase) InsertMany(ctx context.Context, records []sql.Record, options ...sql.Options) (int64, error) {
 	// if no records to insert
@@ -65,7 +71,11 @@ func (c *MysqlDatabase) InsertMany(ctx context.Context, records []sql.Record, op
 
 	var err error
 	var res db.Result
-	res, err = c.db.ExecContext(ctx, parser.ParseInsertQuery(records...), getValues(records)...)
+	query, values, err := parser.ParseInsertQuery(records...)
+	if err != nil {
+		return 0, handleError(err)
+	}
+	res, err = c.db.ExecContext(ctx, query, values...)
 	if err != nil {
 		return 0, handleError(err)
 	}
@@ -76,9 +86,15 @@ func (c *MysqlDatabase) InsertMany(ctx context.Context, records []sql.Record, op
 	if rowsAffected == 0 {
 		return 0, sql.ErrNoRecordInserted
 	}
-
 	return rowsAffected, nil
 }
+
+/*
+Upsert inserts a record into the database if it doesn't exist, otherwise it updates the record.
+Returns the number of rows affected and an error if any.
+Returns 0, nil if no records are provided.
+Returns 0, sql.ErrNoRecordInserted if no records are inserted.
+*/
 
 func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
@@ -87,19 +103,29 @@ func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options .
 	if opt.PreparedName != "" {
 		var stmt *db.Stmt
 		var ok bool
+		var query string
+		var values []any
 		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
-			stmt, err = c.db.PrepareContext(ctx, parser.ParseUpsertQuery(record))
+			query, values, err = parser.ParseUpsertQuery(record)
+			if err != nil {
+				return handleError(err)
+			}
+			stmt, err = c.db.PrepareContext(ctx, query)
 			if err != nil {
 				return handleError(err)
 			}
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
-		res, err = stmt.ExecContext(ctx, record.Values()...)
+		res, err = stmt.ExecContext(ctx, values...)
 		if err != nil {
 			return handleError(err)
 		}
 	} else {
-		res, err = c.db.ExecContext(ctx, parser.ParseUpsertQuery(record), record.Values()...)
+		query, values, err := parser.ParseUpsertQuery(record)
+		if err != nil {
+			return handleError(err)
+		}
+		res, err = c.db.ExecContext(ctx, query, values...)
 		if err != nil {
 			return handleError(err)
 		}

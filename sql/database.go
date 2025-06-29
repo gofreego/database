@@ -76,6 +76,7 @@ type Record interface {
 
 type Records interface {
 	Table() *Table
+	Columns() []string
 	ScanMany(rows Rows) error
 }
 
@@ -193,9 +194,9 @@ type SQLDatabase interface {
 	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
 	Upsert(ctx context.Context, record Record, options ...Options) error
 	GetByID(ctx context.Context, record Record, options ...Options) error
-	GetByFilter(ctx context.Context, filter Filter, record Record, options ...Options) error
+	GetByFilter(ctx context.Context, filter *Filter, record Records, options ...Options) error
 	// This will update the record with the id of the record
-	Update(ctx context.Context, record Record, options ...Options) error
+	UpdateByID(ctx context.Context, record Record, options ...Options) error
 	// This will update the records with the id of the records
 	UpdateMany(ctx context.Context, records []Record, options ...Options) error
 	// This will update the record with condition
