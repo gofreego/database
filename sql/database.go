@@ -87,27 +87,27 @@ const (
 	Desc
 )
 
-type SortField struct {
+type OrderBy struct {
 	Field string
 	Order Order
 }
 
 type Sort struct {
-	fields []SortField
+	fields []OrderBy
 }
 
 func NewSort() *Sort {
 	return &Sort{
-		fields: make([]SortField, 0),
+		fields: make([]OrderBy, 0),
 	}
 }
 
 func (o *Sort) Add(field string, order Order) *Sort {
-	o.fields = append(o.fields, SortField{Field: field, Order: order})
+	o.fields = append(o.fields, OrderBy{Field: field, Order: order})
 	return o
 }
 
-func (o *Sort) Fields() []SortField {
+func (o *Sort) Fields() []OrderBy {
 	return o.fields
 }
 
