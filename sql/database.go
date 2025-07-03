@@ -114,21 +114,29 @@ func (o *Sort) Fields() []SortField {
 type Operator int
 
 const (
-	EQ Operator = iota
-	NEQ
-	GT
-	GTE
-	LT
-	LTE
-	IN
-	NOTIN
-	LIKE
-	NOTLIKE
-	ISNULL
-	NOTNULL
-	AND
-	OR
-	NOT
+	// Comparison Operators
+	EQ  Operator = iota // Equal to
+	NEQ                 // Not equal to
+	GT                  // Greater than
+	GTE                 // Greater than or equal to
+	LT                  // Less than
+	LTE                 // Less than or equal to
+	// Logical Operators
+	AND // Both conditions must be true
+	OR  // At least one condition is true
+	NOT // Negates the condition
+	// Special Operators
+	IN         // Value exists in a list
+	NOTIN      // Value does not exist in list
+	LIKE       // Pattern match (wildcard %, _)
+	NOTLIKE    // Pattern not matching\
+	ISNULL     // Field is NULL
+	ISNOTNULL  // Field is not NULL
+	EXISTS     // Subquery returns rows
+	NOTEXISTS  // Subquery returns no rows
+	REGEXP     // Matches regular expression
+	BETWEEN    // Value is within range (inclusive)
+	NOTBETWEEN // Value is not within range (inclusive)
 )
 
 type GroupBy struct {
@@ -146,14 +154,14 @@ func (g *GroupBy) Fields() []string {
 }
 
 type Condition struct {
-	Field      *string
+	Field      string
 	Value      any
 	Operator   Operator
 	Conditions []Condition
 }
 
 type Filter struct {
-	Condition Condition
+	Condition *Condition
 	GroupBy   *GroupBy
 	Sort      *Sort
 	Limit     int

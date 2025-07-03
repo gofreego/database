@@ -5,56 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/sqlfactory"
+	"github.com/gofreego/database/sql/tests/records"
 )
 
 /*
 Note: please make sure the database is running before running the test
 use `make setup-db` to start the database
 */
-
-type User struct {
-	Id           int64  `sql:"id"`
-	Name         string `sql:"name"`
-	Email        string `sql:"email"`
-	PasswordHash string `sql:"password_hash"`
-	IsActive     int    `sql:"is_active"`
-	CreatedAt    int64  `sql:"created_at"`
-	UpdatedAt    int64  `sql:"updated_at"`
-}
-
-// Columns implements sql.Record.
-func (u *User) Columns() []string {
-	return []string{"name", "email", "password_hash", "is_active", "created_at", "updated_at"}
-}
-
-// ID implements sql.Record.
-func (u *User) ID() int64 {
-	return u.Id
-}
-
-// Scan implements sql.Record.
-func (u *User) Scan(row sql.Row) error {
-	return row.Scan(&u.Name, &u.Email, &u.PasswordHash, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
-}
-
-// SetID implements sql.Record.
-func (u *User) SetID(id int64) {
-	u.Id = id
-}
-
-// Table implements sql.Record.
-func (u *User) Table() *sql.Table {
-	return &sql.Table{
-		Name: "users",
-	}
-}
-
-// Values implements sql.Record.
-func (u *User) Values() []any {
-	return []any{u.Name, u.Email, u.PasswordHash, u.IsActive, u.CreatedAt, u.UpdatedAt}
-}
 
 type args struct {
 	ctx    context.Context
@@ -116,7 +74,7 @@ func newFunction(t *testing.T, tt testCase) bool {
 		t.Errorf("Ping() error = %v, wantErr %v", err, tt.wantErr)
 	}
 
-	user := &User{
+	user := &records.User{
 		Name:         "John Doe",
 		Email:        "john.doe@example.com",
 		PasswordHash: "password123",

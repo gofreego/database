@@ -9,7 +9,7 @@ import (
 
 const (
 	mysqlGetByIDQuery = "SELECT %s FROM %s WHERE id = ?"
-	mysqlGetQuery     = "SELECT %s FROM %s WHERE %s"
+	mysqlGetQuery     = "SELECT %s FROM %s"
 )
 
 func ParseGetByIDQuery(record sql.Record) (string, error) {
@@ -29,5 +29,5 @@ func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []a
 	if err != nil {
 		return "", nil, err
 	}
-	return fmt.Sprintf(mysqlGetQuery, strings.Join(records.Columns(), ", "), tableName, filterString), values, nil
+	return fmt.Sprintf(mysqlGetQuery, strings.Join(records.Columns(), ", "), tableName) + filterString, values, nil
 }
