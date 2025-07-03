@@ -93,6 +93,32 @@ func Test_parseCondition(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "test with empty LIKE condition",
+			args: args{
+				condition: &sql.Condition{
+					Field:    "name",
+					Value:    "",
+					Operator: sql.LIKE,
+				},
+			},
+			want:    "",
+			want1:   nil,
+			wantErr: true,
+		},
+		{
+			name: " test Like with invalid value type",
+			args: args{
+				condition: &sql.Condition{
+					Field:    "name",
+					Value:    123, // Invalid type for LIKE
+					Operator: sql.LIKE,
+				},
+			},
+			want:    "",
+			want1:   nil,
+			wantErr: true, // Expecting an error due to invalid value type
+		},
+		{
 			name: "test with NOT LIKE condition",
 			args: args{
 				condition: &sql.Condition{
@@ -187,7 +213,7 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.BETWEEN,
 				},
 			},
-			want:    "age BETWEEN ? AND ?",
+			want:    "(age BETWEEN ? AND ?)",
 			want1:   []any{18, 30},
 			wantErr: false,
 		},
@@ -200,7 +226,7 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.NOTBETWEEN,
 				},
 			},
-			want:    "age NOT BETWEEN ? AND ?",
+			want:    "(age NOT BETWEEN ? AND ?)",
 			want1:   []any{18, 30},
 			wantErr: false,
 		},

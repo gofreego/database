@@ -63,12 +63,15 @@ func parseCondition(condition *sql.Condition) (string, []any, error) {
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
 		}
+		// LIKE and NOTLIKE require a string value
 		if value, ok := condition.Value.(string); !ok {
 			return "", nil, fmt.Errorf("failed to parse condition, error: value for LIKE/NOTLIKE must be a string")
 		} else {
+			if value == "" {
+				return "", nil, fmt.Errorf("failed to parse condition, error: value for LIKE/NOTLIKE must not be empty")
+			}
 			return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []any{value}, nil
 		}
-
 	case sql.ISNULL, sql.ISNOTNULL:
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
@@ -130,7 +133,7 @@ func parseCondition(condition *sql.Condition) (string, []any, error) {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
 		}
 		if values, ok := condition.Value.([]any); ok && len(values) == 2 {
-			return fmt.Sprintf("%s %s ? AND ?", condition.Field, operatorToStringMap[condition.Operator]), []any{values[0], values[1]}, nil
+			return fmt.Sprintf("(%s %s ? AND ?)", condition.Field, operatorToStringMap[condition.Operator]), []any{values[0], values[1]}, nil
 		} else {
 			return "", nil, fmt.Errorf("failed to parse condition, error: value for BETWEEN/NOTBETWEEN must be a slice of two elements")
 		}
