@@ -4,6 +4,26 @@ import (
 	"context"
 )
 
+type SQLDatabase interface {
+	Ping(ctx context.Context) error
+	Close(ctx context.Context) error
+	Insert(ctx context.Context, record Record, options ...Options) error
+	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
+	Upsert(ctx context.Context, record Record, options ...Options) error
+	GetByID(ctx context.Context, record Record, options ...Options) error
+	GetByFilter(ctx context.Context, filter *Filter, values []any, record Records, options ...Options) error
+	// This will update the record with the id of the record
+	UpdateByID(ctx context.Context, record Record, options ...Options) error
+	// This will update the records with the id of the records
+	UpdateMany(ctx context.Context, records []Record, options ...Options) error
+	// This will update the record with condition
+	UpdateByCondition(ctx context.Context, updates *Updates, condition *Condition, values []any, options ...Options) error
+	// This will delete the record with the id of the record
+	DeleteByID(ctx context.Context, id int64, options ...Options) error
+	// This will delete the record with condition
+	DeleteByCondition(ctx context.Context, condition *Condition, values []any, options ...Options) error
+}
+
 type JoinType int
 
 const (
@@ -67,6 +87,7 @@ type Rows interface {
 // record fields should be exported and should have a sql tag for the column name
 type Record interface {
 	ID() int64
+	IdColumn() string
 	SetID(id int64)
 	Table() *Table
 	Columns() []string
@@ -154,10 +175,11 @@ func (g *GroupBy) Fields() []string {
 }
 
 type Condition struct {
-	Field      string
-	Value      any
-	Operator   Operator
-	Conditions []Condition
+	Field       string
+	ValueIndex  int
+	ValuesCount int
+	Operator    Operator
+	Conditions  []Condition
 }
 
 type Filter struct {
@@ -176,8 +198,8 @@ type Options struct {
 }
 
 type UpdateField struct {
-	Field string
-	Value any
+	Field      string
+	ValueIndex int
 }
 
 type Updates struct {
@@ -190,29 +212,9 @@ func NewUpdates() *Updates {
 	}
 }
 
-func (u *Updates) Add(field string, value any) *Updates {
-	u.Fields = append(u.Fields, UpdateField{Field: field, Value: value})
+func (u *Updates) Add(field string, valueIndex int) *Updates {
+	u.Fields = append(u.Fields, UpdateField{Field: field, ValueIndex: valueIndex})
 	return u
-}
-
-type SQLDatabase interface {
-	Ping(ctx context.Context) error
-	Close(ctx context.Context) error
-	Insert(ctx context.Context, record Record, options ...Options) error
-	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
-	Upsert(ctx context.Context, record Record, options ...Options) error
-	GetByID(ctx context.Context, record Record, options ...Options) error
-	GetByFilter(ctx context.Context, filter *Filter, record Records, options ...Options) error
-	// This will update the record with the id of the record
-	UpdateByID(ctx context.Context, record Record, options ...Options) error
-	// This will update the records with the id of the records
-	UpdateMany(ctx context.Context, records []Record, options ...Options) error
-	// This will update the record with condition
-	UpdateByCondition(ctx context.Context, condition *Condition, updates *Updates, options ...Options) error
-	// This will delete the record with the id of the record
-	DeleteByID(ctx context.Context, id int64, options ...Options) error
-	// This will delete the record with condition
-	DeleteByCondition(ctx context.Context, condition *Condition, options ...Options) error
 }
 
 func GetOptions(options ...Options) Options {
@@ -220,4 +222,47 @@ func GetOptions(options ...Options) Options {
 		return options[0]
 	}
 	return Options{}
+}
+
+type ValueType int
+
+const (
+	Any ValueType = iota
+	String
+	Array
+	Bool
+)
+
+type Value struct {
+	Type   ValueType
+	Index  int
+	Length int
+}
+
+func AnyValue(index int) *Value {
+	return &Value{
+		Type:  Any,
+		Index: index,
+	}
+}
+
+func StringValue(index int) *Value {
+	return &Value{
+		Type:  String,
+		Index: index,
+	}
+}
+
+func ArrayValue(index int, length int) *Value {
+	return &Value{
+		Type:  Array,
+		Index: index,
+	}
+}
+
+func BoolValue(index int) *Value {
+	return &Value{
+		Type:  Bool,
+		Index: index,
+	}
 }

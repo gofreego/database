@@ -59,11 +59,11 @@ func newFunction(t *testing.T, tt testCase) bool {
 	if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
 		t.Errorf("MigrationUP() failed: %v", err)
 	}
-	// defer func() {
-	// 	if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
-	// 		t.Errorf("MigrationDown() failed: %v", err)
-	// 	}
-	// }()
+	defer func() {
+		if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
+			t.Errorf("MigrationDown() failed: %v", err)
+		}
+	}()
 
 	conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
 	if (err != nil) != tt.wantErr {
@@ -85,6 +85,11 @@ func newFunction(t *testing.T, tt testCase) bool {
 
 	if err := conn.Insert(tt.args.ctx, user); err != nil {
 		t.Errorf("Insert() failed: %v", err)
+		return true
+	}
+
+	if user.Id == 0 {
+		t.Errorf("Insert() failed: id is 0")
 		return true
 	}
 

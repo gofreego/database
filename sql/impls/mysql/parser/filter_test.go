@@ -15,7 +15,7 @@ func Test_parseFilter(t *testing.T) {
 		name    string
 		args    args
 		want    string
-		want1   []any
+		want1   []*sql.Value
 		wantErr bool
 	}{
 		{
@@ -32,14 +32,14 @@ func Test_parseFilter(t *testing.T) {
 			args: args{
 				filter: &sql.Filter{
 					Condition: &sql.Condition{
-						Field:    "name",
-						Value:    "John",
-						Operator: sql.EQ,
+						Field:      "name",
+						ValueIndex: 0,
+						Operator:   sql.EQ,
 					},
 				},
 			},
 			want:    "WHERE name = ?",
-			want1:   []any{"John"},
+			want1:   []*sql.Value{sql.AnyValue(0)},
 			wantErr: false,
 		},
 	}

@@ -12,6 +12,10 @@ type User struct {
 	UpdatedAt    int64  `sql:"updated_at"`
 }
 
+func (u *User) IdColumn() string {
+	return "id"
+}
+
 // Columns implements sql.Record.
 func (u *User) Columns() []string {
 	return []string{"id", "name", "email", "password_hash", "is_active", "created_at", "updated_at"}
@@ -24,7 +28,7 @@ func (u *User) ID() int64 {
 
 // Scan implements sql.Record.
 func (u *User) Scan(row sql.Row) error {
-	return row.Scan(&u.Name, &u.Email, &u.PasswordHash, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
+	return row.Scan(&u.Id, &u.Name, &u.Email, &u.PasswordHash, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
 }
 
 // SetID implements sql.Record.

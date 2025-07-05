@@ -52,7 +52,7 @@ func TestParseGetByFilterQuery(t *testing.T) {
 		name    string
 		args    args
 		want    string
-		want1   []any
+		want1   []*sql.Value
 		wantErr bool
 	}{
 		{
@@ -69,12 +69,16 @@ func TestParseGetByFilterQuery(t *testing.T) {
 			name: "with empty filter condition",
 			args: args{
 				filter: &sql.Filter{
-					Condition: &sql.Condition{},
+					Condition: &sql.Condition{
+						Field:      "id",
+						ValueIndex: 0,
+						Operator:   sql.EQ,
+					},
 				},
 				records: &records.Users{},
 			},
-			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users",
-			want1:   nil,
+			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE id = ?",
+			want1:   []*sql.Value{sql.AnyValue(0)},
 			wantErr: false,
 		},
 	}

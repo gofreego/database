@@ -43,8 +43,9 @@ Helper functions
 
 func parseColumns(record sql.Record) string {
 	columns := []string{}
+	idColumn := record.IdColumn()
 	for _, col := range record.Columns() {
-		if col == "id" {
+		if col == idColumn {
 			continue
 		}
 		columns = append(columns, col)
@@ -53,7 +54,7 @@ func parseColumns(record sql.Record) string {
 }
 
 func getValuesPlaceHolders(record ...sql.Record) (string, []any) {
-	placeholder := getPlaceHolders(len(record[0].Columns()))
+	placeholder := getPlaceHolders(len(record[0].Values()))
 	valuesPlaceHolders := make([]string, len(record))
 	values := make([]any, 0)
 	for i := range record {

@@ -34,7 +34,7 @@ func (u *Unimplemented) GetByID(ctx context.Context, record sql.Record, options 
 	return errors.New("GetByID method is not implemented")
 }
 
-func (u *Unimplemented) GetByFilter(ctx context.Context, filter *sql.Filter, records sql.Records, options ...sql.Options) error {
+func (u *Unimplemented) GetByFilter(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
 	return errors.New("GetByFilter method is not implemented")
 }
 
@@ -46,7 +46,7 @@ func (u *Unimplemented) UpdateMany(ctx context.Context, records []sql.Record, op
 	return errors.New("UpdateMany method is not implemented")
 }
 
-func (u *Unimplemented) UpdateByCondition(ctx context.Context, condition *sql.Condition, updates *sql.Updates, options ...sql.Options) error {
+func (u *Unimplemented) UpdateByCondition(ctx context.Context, updates *sql.Updates, condition *sql.Condition, values []any, options ...sql.Options) error {
 	return errors.New("UpdateByCondition method is not implemented")
 }
 
@@ -54,6 +54,6 @@ func (u *Unimplemented) DeleteByID(ctx context.Context, id int64, options ...sql
 	return errors.New("DeleteByID method is not implemented")
 }
 
-func (u *Unimplemented) DeleteByCondition(ctx context.Context, condition *sql.Condition, options ...sql.Options) error {
+func (u *Unimplemented) DeleteByCondition(ctx context.Context, condition *sql.Condition, values []any, options ...sql.Options) error {
 	return errors.New("DeleteByCondition method is not implemented")
 }

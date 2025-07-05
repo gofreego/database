@@ -15,7 +15,7 @@ func Test_parseCondition(t *testing.T) {
 		name    string
 		args    args
 		want    string
-		want1   []any
+		want1   []*sql.Value
 		wantErr bool
 	}{
 		{
@@ -31,35 +31,37 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with simple condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "name",
-					Value:    "John",
-					Operator: sql.EQ,
+					Field:      "name",
+					ValueIndex: 0,
+					Operator:   sql.EQ,
 				},
 			},
 			want:    "name = ?",
-			want1:   []any{"John"},
+			want1:   []*sql.Value{sql.AnyValue(0)},
 			wantErr: false,
 		},
 		{
 			name: "test with IN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "id",
-					Value:    []any{1, 2, 3},
-					Operator: sql.IN,
+					Field:       "id",
+					ValueIndex:  0,
+					ValuesCount: 3,
+					Operator:    sql.IN,
 				},
 			},
 			want:    "id IN (?, ?, ?)",
-			want1:   []any{1, 2, 3},
+			want1:   []*sql.Value{sql.ArrayValue(0, 3)},
 			wantErr: false,
 		},
 		{
 			name: "test with empty IN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "id",
-					Value:    []any{},
-					Operator: sql.IN,
+					Field:       "id",
+					ValueIndex:  0,
+					ValuesCount: 0,
+					Operator:    sql.IN,
 				},
 			},
 			want:    "",
@@ -70,65 +72,53 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with NOT IN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "id",
-					Value:    []any{1, 2, 3},
-					Operator: sql.NOTIN,
+					Field:       "id",
+					ValueIndex:  0,
+					ValuesCount: 3,
+					Operator:    sql.NOTIN,
 				},
 			},
 			want:    "id NOT IN (?, ?, ?)",
-			want1:   []any{1, 2, 3},
+			want1:   []*sql.Value{sql.ArrayValue(0, 3)},
 			wantErr: false,
 		},
 		{
 			name: "test with LIKE condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "name",
-					Value:    "John%",
-					Operator: sql.LIKE,
+					Field:      "name",
+					ValueIndex: 0,
+					Operator:   sql.LIKE,
 				},
 			},
 			want:    "name LIKE ?",
-			want1:   []any{"John%"},
+			want1:   []*sql.Value{sql.StringValue(0)},
 			wantErr: false,
 		},
 		{
 			name: "test with empty LIKE condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "name",
-					Value:    "",
-					Operator: sql.LIKE,
+					Field:      "name",
+					ValueIndex: 0,
+					Operator:   sql.LIKE,
 				},
 			},
-			want:    "",
-			want1:   nil,
-			wantErr: true,
-		},
-		{
-			name: " test Like with invalid value type",
-			args: args{
-				condition: &sql.Condition{
-					Field:    "name",
-					Value:    123, // Invalid type for LIKE
-					Operator: sql.LIKE,
-				},
-			},
-			want:    "",
-			want1:   nil,
-			wantErr: true, // Expecting an error due to invalid value type
+			want:    "name LIKE ?",
+			want1:   []*sql.Value{sql.StringValue(0)},
+			wantErr: false,
 		},
 		{
 			name: "test with NOT LIKE condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "name",
-					Value:    "John%",
-					Operator: sql.NOTLIKE,
+					Field:      "name",
+					ValueIndex: 0,
+					Operator:   sql.NOTLIKE,
 				},
 			},
 			want:    "name NOT LIKE ?",
-			want1:   []any{"John%"},
+			want1:   []*sql.Value{sql.StringValue(0)},
 			wantErr: false,
 		},
 		{
@@ -162,9 +152,9 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.EXISTS,
 					Conditions: []sql.Condition{
 						{
-							Field:    "id",
-							Value:    1,
-							Operator: sql.EQ,
+							Field:      "id",
+							ValueIndex: 0,
+							Operator:   sql.EQ,
 						},
 					},
 				},
@@ -180,9 +170,9 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.NOTEXISTS,
 					Conditions: []sql.Condition{
 						{
-							Field:    "id",
-							Value:    1,
-							Operator: sql.EQ,
+							Field:      "id",
+							ValueIndex: 0,
+							Operator:   sql.EQ,
 						},
 					},
 				},
@@ -195,39 +185,39 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with REGEXP condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "name",
-					Value:    "^[A-Z].*",
-					Operator: sql.REGEXP,
+					Field:      "name",
+					ValueIndex: 0,
+					Operator:   sql.REGEXP,
 				},
 			},
 			want:    "name REGEXP ?",
-			want1:   []any{"^[A-Z].*"},
+			want1:   []*sql.Value{sql.StringValue(0)},
 			wantErr: false,
 		},
 		{
 			name: "test with BETWEEN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "age",
-					Value:    []any{18, 30},
-					Operator: sql.BETWEEN,
+					Field:      "age",
+					ValueIndex: 0,
+					Operator:   sql.BETWEEN,
 				},
 			},
 			want:    "(age BETWEEN ? AND ?)",
-			want1:   []any{18, 30},
+			want1:   []*sql.Value{sql.ArrayValue(0, 2)},
 			wantErr: false,
 		},
 		{
 			name: "test with NOT BETWEEN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "age",
-					Value:    []any{18, 30},
-					Operator: sql.NOTBETWEEN,
+					Field:      "age",
+					ValueIndex: 0,
+					Operator:   sql.NOTBETWEEN,
 				},
 			},
 			want:    "(age NOT BETWEEN ? AND ?)",
-			want1:   []any{18, 30},
+			want1:   []*sql.Value{sql.ArrayValue(0, 2)},
 			wantErr: false,
 		},
 		{
@@ -237,20 +227,20 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.AND,
 					Conditions: []sql.Condition{
 						{
-							Field:    "name",
-							Value:    "John",
-							Operator: sql.EQ,
+							Field:      "name",
+							ValueIndex: 0,
+							Operator:   sql.EQ,
 						},
 						{
-							Field:    "age",
-							Value:    30,
-							Operator: sql.GT,
+							Field:      "age",
+							ValueIndex: 1,
+							Operator:   sql.GT,
 						},
 					},
 				},
 			},
 			want:    "(name = ? AND age > ?)",
-			want1:   []any{"John", 30},
+			want1:   []*sql.Value{sql.AnyValue(0), sql.AnyValue(1)},
 			wantErr: false,
 		},
 		{
@@ -260,21 +250,20 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.OR,
 					Conditions: []sql.Condition{
 						{
-
-							Field:    "name",
-							Value:    "John",
-							Operator: sql.EQ,
+							Field:      "name",
+							ValueIndex: 0,
+							Operator:   sql.EQ,
 						},
 						{
-							Field:    "age",
-							Value:    30,
-							Operator: sql.GT,
+							Field:      "age",
+							ValueIndex: 1,
+							Operator:   sql.GT,
 						},
 					},
 				},
 			},
 			want:    "(name = ? OR age > ?)",
-			want1:   []any{"John", 30},
+			want1:   []*sql.Value{sql.AnyValue(0), sql.AnyValue(1)},
 			wantErr: false,
 		},
 		{
@@ -284,24 +273,24 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.NOT,
 					Conditions: []sql.Condition{
 						{
-							Field:    "name",
-							Value:    "John",
-							Operator: sql.EQ,
+							Field:      "name",
+							ValueIndex: 0,
+							Operator:   sql.EQ,
 						},
 					},
 				},
 			},
 			want:    "NOT (name = ?)",
-			want1:   []any{"John"},
+			want1:   []*sql.Value{sql.AnyValue(0)},
 			wantErr: false,
 		},
 		{
 			name: "test with invalid operator",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "name",
-					Value:    "John",
-					Operator: sql.Operator(999), // Invalid operator
+					Field:      "name",
+					ValueIndex: 0,
+					Operator:   sql.Operator(999), // Invalid operator
 				},
 			},
 			want:    "",
@@ -312,9 +301,9 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with empty field",
 			args: args{
 				condition: &sql.Condition{
-					Field:    "",
-					Value:    "John",
-					Operator: sql.EQ,
+					Field:      "",
+					ValueIndex: 0,
+					Operator:   sql.EQ,
 				},
 			},
 			want:    "",
@@ -323,12 +312,12 @@ func Test_parseCondition(t *testing.T) {
 		},
 		{
 			name: "test with empty value for IN condition",
-
 			args: args{
 				condition: &sql.Condition{
-					Field:    "id",
-					Value:    []any{},
-					Operator: sql.IN,
+					Field:       "id",
+					ValueIndex:  0,
+					ValuesCount: 0,
+					Operator:    sql.IN,
 				},
 			},
 			want:    "",

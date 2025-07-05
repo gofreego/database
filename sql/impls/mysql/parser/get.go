@@ -20,7 +20,7 @@ func ParseGetByIDQuery(record sql.Record) (string, error) {
 	return fmt.Sprintf(mysqlGetByIDQuery, strings.Join(record.Columns(), ", "), tableName), nil
 }
 
-func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []any, error) {
+func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []*sql.Value, error) {
 	filterString, values, err := parseFilter(filter)
 	if err != nil {
 		return "", nil, err
@@ -29,5 +29,9 @@ func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []a
 	if err != nil {
 		return "", nil, err
 	}
-	return fmt.Sprintf(mysqlGetQuery, strings.Join(records.Columns(), ", "), tableName) + filterString, values, nil
+	query := fmt.Sprintf(mysqlGetQuery, strings.Join(records.Columns(), ", "), tableName)
+	if filterString != "" {
+		query += " " + filterString
+	}
+	return query, values, nil
 }

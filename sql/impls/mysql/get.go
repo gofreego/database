@@ -47,10 +47,10 @@ func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options 
 	return handleError(record.Scan(row))
 }
 
-func (c *MysqlDatabase) GetByFilter(ctx context.Context, filter *sql.Filter, records sql.Records, options ...sql.Options) error {
+func (c *MysqlDatabase) GetByFilter(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
-	var conditionValues []any
+	var conditionValues []*sql.Value
 	var rows sql.Rows
 	if opt.PreparedName != "" {
 		var stmt *db.Stmt
@@ -69,7 +69,14 @@ func (c *MysqlDatabase) GetByFilter(ctx context.Context, filter *sql.Filter, rec
 			}
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
-		rows, err = stmt.QueryContext(ctx, conditionValues...)
+		// Convert sql.Value to actual values using the provided values slice
+		actualValues := make([]any, len(conditionValues))
+		for i, val := range conditionValues {
+			if val.Index < len(values) {
+				actualValues[i] = values[val.Index]
+			}
+		}
+		rows, err = stmt.QueryContext(ctx, actualValues...)
 		if err != nil {
 			return handleError(err)
 		}
@@ -80,7 +87,14 @@ func (c *MysqlDatabase) GetByFilter(ctx context.Context, filter *sql.Filter, rec
 			return handleError(err)
 		}
 		logger.Debug(ctx, "GetByFilter query: %s", query)
-		rows, err = c.db.QueryContext(ctx, query, conditionValues...)
+		// Convert sql.Value to actual values using the provided values slice
+		actualValues := make([]any, len(conditionValues))
+		for i, val := range conditionValues {
+			if val.Index < len(values) {
+				actualValues[i] = values[val.Index]
+			}
+		}
+		rows, err = c.db.QueryContext(ctx, query, actualValues...)
 		if err != nil {
 			return handleError(err)
 		}

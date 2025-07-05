@@ -9,5 +9,7 @@ setup-db-down:
 
 test:
 	make setup-db-up
-	go test -v ./...
+	go test -v -cover -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
 	make setup-db-down

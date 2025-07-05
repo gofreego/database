@@ -21,9 +21,8 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 		var stmt *db.Stmt
 		var ok bool
 		var query string
-		var values []any
 		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
-			query, values, err = parser.ParseInsertQuery(record)
+			query, _, err = parser.ParseInsertQuery(record)
 			if err != nil {
 				return handleError(err)
 			}
@@ -34,7 +33,7 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
 
-		res, err = stmt.ExecContext(ctx, values...)
+		res, err = stmt.ExecContext(ctx, record.Values()...)
 		if err != nil {
 			return handleError(err)
 		}

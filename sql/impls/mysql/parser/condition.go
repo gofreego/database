@@ -39,7 +39,7 @@ returns
 string :: condition string
 []any :: values
 */
-func parseCondition(condition *sql.Condition) (string, []any, error) {
+func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 	if condition == nil {
 		return "", nil, nil
 	}
@@ -48,30 +48,23 @@ func parseCondition(condition *sql.Condition) (string, []any, error) {
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
 		}
-		return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []any{condition.Value}, nil
+		return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{sql.AnyValue(condition.ValueIndex)}, nil
 
 	case sql.IN, sql.NOTIN:
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
 		}
-		if values, ok := condition.Value.([]any); ok && len(values) > 0 {
-			return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], getPlaceHolders(len(values))), values, nil
+		if condition.ValuesCount > 0 {
+			return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], getPlaceHolders(condition.ValuesCount)), []*sql.Value{sql.ArrayValue(condition.ValueIndex, condition.ValuesCount)}, nil
 		} else {
-			return "", nil, fmt.Errorf("failed to parse condition, error: value for IN/NOTIN must be a non-empty slice")
+			return "", nil, fmt.Errorf("failed to parse condition, error: value indexes for IN/NOTIN must be a non-empty slice")
 		}
 	case sql.LIKE, sql.NOTLIKE:
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
 		}
-		// LIKE and NOTLIKE require a string value
-		if value, ok := condition.Value.(string); !ok {
-			return "", nil, fmt.Errorf("failed to parse condition, error: value for LIKE/NOTLIKE must be a string")
-		} else {
-			if value == "" {
-				return "", nil, fmt.Errorf("failed to parse condition, error: value for LIKE/NOTLIKE must not be empty")
-			}
-			return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []any{value}, nil
-		}
+		return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{sql.StringValue(condition.ValueIndex)}, nil
+
 	case sql.ISNULL, sql.ISNOTNULL:
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
@@ -85,11 +78,7 @@ func parseCondition(condition *sql.Condition) (string, []any, error) {
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
 		}
-		if value, ok := condition.Value.(string); !ok {
-			return "", nil, fmt.Errorf("failed to parse condition, error: value for REGEXP must be a string")
-		} else {
-			return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []any{value}, nil
-		}
+		return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{sql.StringValue(condition.ValueIndex)}, nil
 	case sql.AND, sql.OR:
 		if condition.Field != "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field should be empty for logical operators: %s", operatorToStringMap[condition.Operator])
@@ -98,7 +87,7 @@ func parseCondition(condition *sql.Condition) (string, []any, error) {
 			return "", nil, fmt.Errorf("failed to parse condition, error: conditions should not be empty for logical operators: %s", operatorToStringMap[condition.Operator])
 		}
 		var conditionStrings []string
-		var conditionValues []any
+		var conditionValues []*sql.Value
 		for _, subCondition := range condition.Conditions {
 			subConditionString, subConditionValues, err := parseCondition(&subCondition)
 			if err != nil {
@@ -115,7 +104,7 @@ func parseCondition(condition *sql.Condition) (string, []any, error) {
 		return fmt.Sprintf("(%s)", strings.Join(conditionStrings, fmt.Sprintf(" %s ", operatorToStringMap[condition.Operator]))), conditionValues, nil
 	case sql.NOT:
 		if condition.Field != "" {
-			return "", nil, fmt.Errorf("failed to parse condition, error: field should be emptyfor NOT operator")
+			return "", nil, fmt.Errorf("failed to parse condition, error: field should be empty for NOT operator")
 		}
 		if len(condition.Conditions) != 1 {
 			return "", nil, fmt.Errorf("failed to parse condition, error: NOT operator should have exactly one sub-condition")
@@ -132,11 +121,8 @@ func parseCondition(condition *sql.Condition) (string, []any, error) {
 		if condition.Field == "" {
 			return "", nil, fmt.Errorf("failed to parse condition, error: field is empty")
 		}
-		if values, ok := condition.Value.([]any); ok && len(values) == 2 {
-			return fmt.Sprintf("(%s %s ? AND ?)", condition.Field, operatorToStringMap[condition.Operator]), []any{values[0], values[1]}, nil
-		} else {
-			return "", nil, fmt.Errorf("failed to parse condition, error: value for BETWEEN/NOTBETWEEN must be a slice of two elements")
-		}
+
+		return fmt.Sprintf("(%s %s ? AND ?)", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{sql.ArrayValue(condition.ValueIndex, 2)}, nil
 
 	default:
 		return "", nil, fmt.Errorf("failed to parse condition, error: invalid operator: %d, for field: %s", condition.Operator, condition.Field)
