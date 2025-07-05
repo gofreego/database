@@ -1,11 +1,10 @@
-package tests
+package parser
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/gofreego/database/sql"
-	"github.com/gofreego/database/sql/impls/mysql/parser"
 	"github.com/gofreego/database/sql/tests/records"
 )
 
@@ -31,7 +30,7 @@ func TestParseGetByIDQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parser.ParseGetByIDQuery(tt.args.record)
+			got, err := ParseGetByIDQuery(tt.args.record)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseGetByIDQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -84,7 +83,7 @@ func TestParseGetByFilterQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := parser.ParseGetByFilterQuery(tt.args.filter, tt.args.records)
+			got, got1, err := ParseGetByFilterQuery(tt.args.filter, tt.args.records)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseGetByFilterQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
