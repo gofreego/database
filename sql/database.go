@@ -175,19 +175,31 @@ func (g *GroupBy) Fields() []string {
 }
 
 type Condition struct {
-	Field       string
-	ValueIndex  int
-	ValuesCount int
-	Operator    Operator
-	Conditions  []Condition
+	Field string // The field name to apply the condition on i.e. column name (e. "email", "is_active")
+	// # This can be a single value or a slice of values for IN/NOTIN
+	// # if this is non nil then ValueIndex will be ignored
+	// # avoid using this if value is not fixed, use ValueIndex instead
+	Value       any
+	ValueIndex  int         // if you want to use a parameterized query, use this index to get the value from the values slice
+	ValuesCount int         // for IN/NOTIN operators, this is the number of values to use from the values slice
+	Operator    Operator    // The operator to apply the condition (e.g. EQ, NEQ, GT, etc.)
+	Conditions  []Condition // Nested conditions for AND/OR operations
 }
 
 type Filter struct {
-	Condition *Condition
-	GroupBy   *GroupBy
-	Sort      *Sort
+	Condition *Condition // The main condition for the filter
+	GroupBy   *GroupBy   // Grouping fields for aggregation
+	Sort      *Sort      // Sorting fields for the result set
 	Limit     int
 	Offset    int
+}
+
+type Pagination struct {
+	Limit           any // Int, The maximum number of records to return, use this if values are fixed else use LimitValueIndex
+	LimitValueIndex int // The index of the limit value in the values slice for parameterized queries
+
+	Offset           any // Int, The number of records to skip before starting to return records, use this if values are fixed else use OffsetValueIndex
+	OffsetValueIndex int // The index of the offset value in the values slice for parameterized queries
 }
 
 type Options struct {
