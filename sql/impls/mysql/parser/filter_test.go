@@ -32,14 +32,43 @@ func Test_parseFilter(t *testing.T) {
 			args: args{
 				filter: &sql.Filter{
 					Condition: &sql.Condition{
-						Field:      "name",
-						ValueIndex: 0,
-						Operator:   sql.EQ,
+						Field:    "name",
+						Value:    sql.NewIndexedValue(0),
+						Operator: sql.EQ,
 					},
 				},
 			},
 			want:    "WHERE name = ?",
-			want1:   []*sql.Value{sql.AnyValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0)},
+			wantErr: false,
+		},
+		{
+			name: "test with complex filter",
+			args: args{
+				filter: &sql.Filter{
+					Condition: &sql.Condition{
+						Operator: sql.AND,
+						Conditions: []sql.Condition{
+							{
+								Field:    "email",
+								Value:    sql.NewIndexedValue(0),
+								Operator: sql.EQ,
+							},
+							{
+								Field:    "age",
+								Value:    sql.NewValue(30),
+								Operator: sql.GT,
+							},
+						},
+					},
+					GroupBy: sql.NewGroupBy("city", "country"),
+					Sort:    sql.NewSort().Add("age", sql.Asc),
+					Limit:   sql.NewValue(int64(10)),
+					Offset:  sql.NewIndexedValue(1).WithType(sql.Int),
+				},
+			},
+			want:    "WHERE (email = ? AND age > 30) GROUP BY city, country ORDER BY age ASC LIMIT 10 OFFSET ?",
+			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(1).WithType(sql.Int)},
 			wantErr: false,
 		},
 	}

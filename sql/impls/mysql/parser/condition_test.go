@@ -31,37 +31,35 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with simple condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "name",
-					ValueIndex: 0,
-					Operator:   sql.EQ,
+					Field:    "name",
+					Value:    sql.NewIndexedValue(0),
+					Operator: sql.EQ,
 				},
 			},
 			want:    "name = ?",
-			want1:   []*sql.Value{sql.AnyValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0)},
 			wantErr: false,
 		},
 		{
 			name: "test with IN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:       "id",
-					ValueIndex:  0,
-					ValuesCount: 3,
-					Operator:    sql.IN,
+					Field:    "id",
+					Value:    sql.NewIndexedValue(0).WithCount(3),
+					Operator: sql.IN,
 				},
 			},
 			want:    "id IN (?, ?, ?)",
-			want1:   []*sql.Value{sql.ArrayValue(0, 3)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(3).WithType(sql.Array)},
 			wantErr: false,
 		},
 		{
 			name: "test with empty IN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:       "id",
-					ValueIndex:  0,
-					ValuesCount: 0,
-					Operator:    sql.IN,
+					Field:    "id",
+					Value:    sql.NewIndexedValue(0).WithCount(0),
+					Operator: sql.IN,
 				},
 			},
 			want:    "",
@@ -72,53 +70,52 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with NOT IN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:       "id",
-					ValueIndex:  0,
-					ValuesCount: 3,
-					Operator:    sql.NOTIN,
+					Field:    "id",
+					Value:    sql.NewIndexedValue(0).WithCount(3),
+					Operator: sql.NOTIN,
 				},
 			},
 			want:    "id NOT IN (?, ?, ?)",
-			want1:   []*sql.Value{sql.ArrayValue(0, 3)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(3).WithType(sql.Array)},
 			wantErr: false,
 		},
 		{
 			name: "test with LIKE condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "name",
-					ValueIndex: 0,
-					Operator:   sql.LIKE,
+					Field:    "name",
+					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Operator: sql.LIKE,
 				},
 			},
 			want:    "name LIKE ?",
-			want1:   []*sql.Value{sql.StringValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
 			wantErr: false,
 		},
 		{
 			name: "test with empty LIKE condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "name",
-					ValueIndex: 0,
-					Operator:   sql.LIKE,
+					Field:    "name",
+					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Operator: sql.LIKE,
 				},
 			},
 			want:    "name LIKE ?",
-			want1:   []*sql.Value{sql.StringValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
 			wantErr: false,
 		},
 		{
 			name: "test with NOT LIKE condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "name",
-					ValueIndex: 0,
-					Operator:   sql.NOTLIKE,
+					Field:    "name",
+					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Operator: sql.NOTLIKE,
 				},
 			},
 			want:    "name NOT LIKE ?",
-			want1:   []*sql.Value{sql.StringValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
 			wantErr: false,
 		},
 		{
@@ -152,9 +149,9 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.EXISTS,
 					Conditions: []sql.Condition{
 						{
-							Field:      "id",
-							ValueIndex: 0,
-							Operator:   sql.EQ,
+							Field:    "id",
+							Value:    sql.NewIndexedValue(0),
+							Operator: sql.EQ,
 						},
 					},
 				},
@@ -170,9 +167,9 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.NOTEXISTS,
 					Conditions: []sql.Condition{
 						{
-							Field:      "id",
-							ValueIndex: 0,
-							Operator:   sql.EQ,
+							Field:    "id",
+							Value:    sql.NewIndexedValue(0),
+							Operator: sql.EQ,
 						},
 					},
 				},
@@ -185,39 +182,39 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with REGEXP condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "name",
-					ValueIndex: 0,
-					Operator:   sql.REGEXP,
+					Field:    "name",
+					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Operator: sql.REGEXP,
 				},
 			},
 			want:    "name REGEXP ?",
-			want1:   []*sql.Value{sql.StringValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
 			wantErr: false,
 		},
 		{
 			name: "test with BETWEEN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "age",
-					ValueIndex: 0,
-					Operator:   sql.BETWEEN,
+					Field:    "age",
+					Value:    sql.NewIndexedValue(0).WithCount(2),
+					Operator: sql.BETWEEN,
 				},
 			},
 			want:    "(age BETWEEN ? AND ?)",
-			want1:   []*sql.Value{sql.ArrayValue(0, 2)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(2).WithType(sql.Array)},
 			wantErr: false,
 		},
 		{
 			name: "test with NOT BETWEEN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "age",
-					ValueIndex: 0,
-					Operator:   sql.NOTBETWEEN,
+					Field:    "age",
+					Value:    sql.NewIndexedValue(0).WithCount(2),
+					Operator: sql.NOTBETWEEN,
 				},
 			},
 			want:    "(age NOT BETWEEN ? AND ?)",
-			want1:   []*sql.Value{sql.ArrayValue(0, 2)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(2).WithType(sql.Array)},
 			wantErr: false,
 		},
 		{
@@ -227,20 +224,20 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.AND,
 					Conditions: []sql.Condition{
 						{
-							Field:      "name",
-							ValueIndex: 0,
-							Operator:   sql.EQ,
+							Field:    "name",
+							Value:    sql.NewIndexedValue(0),
+							Operator: sql.EQ,
 						},
 						{
-							Field:      "age",
-							ValueIndex: 1,
-							Operator:   sql.GT,
+							Field:    "age",
+							Value:    sql.NewIndexedValue(1),
+							Operator: sql.GT,
 						},
 					},
 				},
 			},
 			want:    "(name = ? AND age > ?)",
-			want1:   []*sql.Value{sql.AnyValue(0), sql.AnyValue(1)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(1)},
 			wantErr: false,
 		},
 		{
@@ -250,20 +247,20 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.OR,
 					Conditions: []sql.Condition{
 						{
-							Field:      "name",
-							ValueIndex: 0,
-							Operator:   sql.EQ,
+							Field:    "name",
+							Value:    sql.NewIndexedValue(0),
+							Operator: sql.EQ,
 						},
 						{
-							Field:      "age",
-							ValueIndex: 1,
-							Operator:   sql.GT,
+							Field:    "age",
+							Value:    sql.NewIndexedValue(1),
+							Operator: sql.GT,
 						},
 					},
 				},
 			},
 			want:    "(name = ? OR age > ?)",
-			want1:   []*sql.Value{sql.AnyValue(0), sql.AnyValue(1)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(1)},
 			wantErr: false,
 		},
 		{
@@ -273,24 +270,24 @@ func Test_parseCondition(t *testing.T) {
 					Operator: sql.NOT,
 					Conditions: []sql.Condition{
 						{
-							Field:      "name",
-							ValueIndex: 0,
-							Operator:   sql.EQ,
+							Field:    "name",
+							Value:    sql.NewIndexedValue(0),
+							Operator: sql.EQ,
 						},
 					},
 				},
 			},
 			want:    "NOT (name = ?)",
-			want1:   []*sql.Value{sql.AnyValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0)},
 			wantErr: false,
 		},
 		{
 			name: "test with invalid operator",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "name",
-					ValueIndex: 0,
-					Operator:   sql.Operator(999), // Invalid operator
+					Field:    "name",
+					Value:    sql.NewIndexedValue(0),
+					Operator: sql.Operator(999), // Invalid operator
 				},
 			},
 			want:    "",
@@ -301,9 +298,9 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with empty field",
 			args: args{
 				condition: &sql.Condition{
-					Field:      "",
-					ValueIndex: 0,
-					Operator:   sql.EQ,
+					Field:    "",
+					Value:    sql.NewIndexedValue(0),
+					Operator: sql.EQ,
 				},
 			},
 			want:    "",
@@ -314,10 +311,9 @@ func Test_parseCondition(t *testing.T) {
 			name: "test with empty value for IN condition",
 			args: args{
 				condition: &sql.Condition{
-					Field:       "id",
-					ValueIndex:  0,
-					ValuesCount: 0,
-					Operator:    sql.IN,
+					Field:    "id",
+					Value:    sql.NewIndexedValue(0).WithCount(0),
+					Operator: sql.IN,
 				},
 			},
 			want:    "",

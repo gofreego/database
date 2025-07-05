@@ -53,7 +53,7 @@ type Users struct {
 	Users []*User
 }
 
-func (u *Users) ScanMany(rows sql.Rows) error {
+func (u *Users) Scan(rows sql.Rows) error {
 	u.Users = make([]*User, 0)
 	for rows.Next() {
 		user := new(User)

@@ -70,15 +70,15 @@ func TestParseGetByFilterQuery(t *testing.T) {
 			args: args{
 				filter: &sql.Filter{
 					Condition: &sql.Condition{
-						Field:      "id",
-						ValueIndex: 0,
-						Operator:   sql.EQ,
+						Field:    "id",
+						Value:    sql.NewIndexedValue(0),
+						Operator: sql.EQ,
 					},
 				},
 				records: &records.Users{},
 			},
 			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE id = ?",
-			want1:   []*sql.Value{sql.AnyValue(0)},
+			want1:   []*sql.Value{sql.NewIndexedValue(0)},
 			wantErr: false,
 		},
 	}

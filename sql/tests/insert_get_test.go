@@ -236,9 +236,9 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 				users := &records.Users{}
 				getFilter := &sql.Filter{
 					Condition: &sql.Condition{
-						Field:      "email",
-						ValueIndex: 0,
-						Operator:   sql.EQ,
+						Field:    "email",
+						Value:    sql.NewIndexedValue(0),
+						Operator: sql.EQ,
 					},
 				}
 				values := []any{user.Email}
@@ -276,10 +276,9 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 				users := &records.Users{}
 				getFilter := &sql.Filter{
 					Condition: &sql.Condition{
-						Field: "is_active",
-
-						ValueIndex: 0,
-						Operator:   sql.EQ,
+						Field:    "is_active",
+						Value:    sql.NewIndexedValue(0),
+						Operator: sql.EQ,
 					},
 				}
 				values := []any{1} // Get all active users

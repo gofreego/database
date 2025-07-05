@@ -99,5 +99,5 @@ func (c *MysqlDatabase) GetByFilter(ctx context.Context, filter *sql.Filter, val
 			return handleError(err)
 		}
 	}
-	return handleError(records.ScanMany(rows))
+	return handleError(records.Scan(rows))
 }

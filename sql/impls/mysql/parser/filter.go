@@ -41,12 +41,30 @@ func parseFilter(filter *sql.Filter) (string, []*sql.Value, error) {
 		filterStrings = append(filterStrings, orderBy)
 	}
 	// limit
-	if filter.Limit > 0 {
-		filterStrings = append(filterStrings, fmt.Sprintf("LIMIT %d", filter.Limit))
+	if filter.Limit != nil {
+		if filter.Limit.Value != nil {
+			if v, ok := filter.Limit.Value.(int64); ok && v > 0 {
+				filterStrings = append(filterStrings, fmt.Sprintf("LIMIT %d", v))
+			} else {
+				return "", nil, fmt.Errorf("invalid limit value: %v, expected int/int64 and greater than zero", filter.Limit.Value)
+			}
+		} else {
+			filterStrings = append(filterStrings, "LIMIT ?")
+			filterValues = append(filterValues, filter.Limit.WithType(sql.Int))
+		}
 	}
 	// offset
-	if filter.Offset > 0 {
-		filterStrings = append(filterStrings, fmt.Sprintf("OFFSET %d", filter.Offset))
+	if filter.Offset != nil {
+		if filter.Offset.Value != nil {
+			if v, ok := filter.Offset.Value.(int64); ok && v >= 0 {
+				filterStrings = append(filterStrings, fmt.Sprintf("OFFSET %d", v))
+			} else {
+				return "", nil, fmt.Errorf("invalid offset value: %v, expected int/int64 and greater than or equal to zero", filter.Offset.Value)
+			}
+		} else {
+			filterStrings = append(filterStrings, "OFFSET ?")
+			filterValues = append(filterValues, filter.Offset.WithType(sql.Int))
+		}
 	}
 
 	return strings.Join(filterStrings, " "), filterValues, nil

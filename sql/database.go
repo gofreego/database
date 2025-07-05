@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"fmt"
 )
 
 type SQLDatabase interface {
@@ -24,19 +25,13 @@ type SQLDatabase interface {
 	DeleteByCondition(ctx context.Context, condition *Condition, values []any, options ...Options) error
 }
 
-type JoinType int
-
-const (
-	InnerJoin JoinType = iota
-	LeftJoin
-	RightJoin
-)
-
-type Join struct {
-	Type  JoinType
-	Table *Table
-	On    *Condition
-}
+/*
+*
+************ Table
+************ Table is used to represent a table in the database.
+*
+*
+ */
 
 type Table struct {
 	Name  string
@@ -98,8 +93,10 @@ type Record interface {
 type Records interface {
 	Table() *Table
 	Columns() []string
-	ScanMany(rows Rows) error
+	Scan(rows Rows) error
 }
+
+/************ Sorting ************/
 
 type Order int
 
@@ -132,6 +129,8 @@ func (o *Sort) Fields() []OrderBy {
 	return o.fields
 }
 
+/************ Conditions ************/
+
 type Operator int
 
 const (
@@ -160,6 +159,53 @@ const (
 	NOTBETWEEN // Value is not within range (inclusive)
 )
 
+func (o Operator) String() string {
+	switch o {
+	case EQ:
+		return "EQ"
+	case NEQ:
+		return "NEQ"
+	case GT:
+		return "GT"
+	case GTE:
+		return "GTE"
+	case LT:
+		return "LT"
+	case LTE:
+		return "LTE"
+	case AND:
+		return "AND"
+	case OR:
+		return "OR"
+	case NOT:
+		return "NOT"
+	case IN:
+		return "IN"
+	case NOTIN:
+		return "NOT IN"
+	case LIKE:
+		return "LIKE"
+	case NOTLIKE:
+		return "NOT LIKE"
+	case ISNULL:
+		return "IS NULL"
+	case ISNOTNULL:
+		return "IS NOT NULL"
+	case EXISTS:
+		return "EXISTS"
+	case NOTEXISTS:
+		return "NOT EXISTS"
+	case REGEXP:
+		return "REGEXP"
+	case BETWEEN:
+		return "BETWEEN"
+	case NOTBETWEEN:
+		return "NOT BETWEEN"
+	default:
+		return ""
+	}
+}
+
 type GroupBy struct {
 	fields []string
 }
@@ -175,39 +221,78 @@ func (g *GroupBy) Fields() []string {
 }
 
 type Condition struct {
-	Field string // The field name to apply the condition on i.e. column name (e. "email", "is_active")
-	// # This can be a single value or a slice of values for IN/NOTIN
-	// # if this is non nil then ValueIndex will be ignored
-	// # avoid using this if value is not fixed, use ValueIndex instead
-	Value       any
-	ValueIndex  int         // if you want to use a parameterized query, use this index to get the value from the values slice
-	ValuesCount int         // for IN/NOTIN operators, this is the number of values to use from the values slice
-	Operator    Operator    // The operator to apply the condition (e.g. EQ, NEQ, GT, etc.)
-	Conditions  []Condition // Nested conditions for AND/OR operations
+	Field      string // The field name to apply the condition on i.e. column name (e. "email", "is_active")
+	Value      *Value
+	Operator   Operator    // The operator to apply the condition (e.g. EQ, NEQ, GT, etc.)
+	Conditions []Condition // Nested conditions for AND/OR operations
 }
+
+func (c *Condition) Validate() error {
+	if c == nil {
+		return nil // No condition to validate
+	}
+	switch c.Operator {
+	case AND, OR, NOT:
+		if c.Field != "" || c.Value != nil {
+			return fmt.Errorf("invalid condition: value should be nil and field should be empty for AND/OR/NOT operator,for filed: %s, Operator:%s", c.Field, c.Operator.String())
+		}
+		if len(c.Conditions) == 0 {
+			return fmt.Errorf("invalid condition: conditions should not be empty for AND/OR/NOT operator")
+		}
+		return nil
+	case EQ, NEQ, GT, GTE, LT, LTE, IN, NOTIN, LIKE, NOTLIKE, REGEXP, BETWEEN, NOTBETWEEN:
+		if c.Field == "" {
+			return fmt.Errorf("invalid condition: field should not be empty for operator %s", c.Operator.String())
+		}
+		if c.Value == nil {
+			return fmt.Errorf("invalid condition: value should not be nil for operator %s", c.Operator.String())
+		}
+		if len(c.Conditions) > 0 {
+			return fmt.Errorf("invalid condition: conditions should be empty for operator %s, for field: %s", c.Operator.String(), c.Field)
+		}
+		return nil
+	case ISNULL, ISNOTNULL:
+		if c.Field == "" {
+			return fmt.Errorf("invalid condition: field should not be empty for operator %s", c.Operator.String())
+		}
+		if c.Value != nil {
+			return fmt.Errorf("invalid condition: value should be nil for operator %s, for field: %s", c.Operator.String(), c.Field)
+		}
+		if len(c.Conditions) > 0 {
+			return fmt.Errorf("invalid condition: conditions should be empty for operator %s, for field: %s", c.Operator.String(), c.Field)
+		}
+		return nil
+	case EXISTS, NOTEXISTS:
+		return fmt.Errorf("invalid condition: EXISTS and NOT EXISTS operators not supported, field: %s, Operator: %s", c.Field, c.Operator.String())
+	default:
+		return fmt.Errorf("invalid condition: unknown operator %s, for field: %s", c.Operator.String(), c.Field)
+	}
+}
+
+/*
+*
+*
+************ Filter
+************ Filter is used to filter the records based on the condition, group by, sort and
+*
+*
+ */
 
 type Filter struct {
 	Condition *Condition // The main condition for the filter
 	GroupBy   *GroupBy   // Grouping fields for aggregation
 	Sort      *Sort      // Sorting fields for the result set
-	Limit     int
-	Offset    int
+	Limit     *Value     // Limit the number of records returned
+	Offset    *Value     // Offset the number of records returned
 }
 
-type Pagination struct {
-	Limit           any // Int, The maximum number of records to return, use this if values are fixed else use LimitValueIndex
-	LimitValueIndex int // The index of the limit value in the values slice for parameterized queries
-
-	Offset           any // Int, The number of records to skip before starting to return records, use this if values are fixed else use OffsetValueIndex
-	OffsetValueIndex int // The index of the offset value in the values slice for parameterized queries
-}
-
-type Options struct {
-	// if you want to use the primary database, use this option
-	UsePrimaryDB bool
-	// if you want to prepare the query, use this option
-	PreparedName string // It should be unique for each diff type of query
-}
+/*
+**
+************ Updates
+************ Updates are used to update the fields of a record.
+*
+*
+ */
 
 type UpdateField struct {
 	Field      string
@@ -229,52 +314,106 @@ func (u *Updates) Add(field string, valueIndex int) *Updates {
 	return u
 }
 
-func GetOptions(options ...Options) Options {
-	if len(options) > 0 {
-		return options[0]
-	}
-	return Options{}
+/*
+*
+*
+ ***** Joins
+*
+*
+*/
+
+type JoinType int
+
+const (
+	InnerJoin JoinType = iota
+	LeftJoin
+	RightJoin
+)
+
+type Join struct {
+	Type  JoinType
+	Table *Table
+	On    *Condition
 }
 
+/*
+*
+*
+************ Values
+************ These are used for internal purposes to represent the type of value for adding validations.
+*
+*
+ */
 type ValueType int
 
 const (
 	Any ValueType = iota
 	String
 	Array
-	Bool
+	Int
 )
 
 type Value struct {
-	Type   ValueType
-	Index  int
-	Length int
+	// This is used for internal purpose to specify the type of value needed for validation
+	Type ValueType
+	// // This is used for fixed values that are not parameterized. These values will be hardcoded
+	// // in the query. Use this carefully, as it may lead to SQL injection if the value is not sanitized.
+	Value any
+	// This is used for parameterized queries where the value is not fixed and is passed as a parameter.
+	// if value is used for IN/NOTIN operators. use WithCount to specify the number of values to use from the values slice
+	// Index is the index of the value in the values slice for parameterized queries
+	Index int
+	Count int // This is used for IN/NOTIN operators to specify the number of values to use from the values slice
 }
 
-func AnyValue(index int) *Value {
+// This method is used for internal purpose
+func (v *Value) WithType(t ValueType) *Value {
+	v.Type = t
+	return v
+}
+
+func (v *Value) WithCount(count int) *Value {
+	v.Count = count
+	return v
+}
+
+// NewIndexedValue creates a new Value with the specified index.
+// This is used for parameterized queries where the value is not fixed and is passed as a parameter.
+// if value is used for IN/NOTIN operators. use WithCount to specify the number of values to use from the values slice
+func NewIndexedValue(index int) *Value {
 	return &Value{
 		Type:  Any,
 		Index: index,
 	}
 }
 
-func StringValue(index int) *Value {
+// NewValue creates a new Value with the specified value.
+// This is used for fixed values that are not parameterized. These values will be hardcoded in the query.
+// Use this carefully, as it may lead to SQL injection if the value is not sanitized.
+func NewValue(value any) *Value {
 	return &Value{
-		Type:  String,
-		Index: index,
+		Type:  Any,
+		Value: value,
 	}
 }
 
-func ArrayValue(index int, length int) *Value {
-	return &Value{
-		Type:  Array,
-		Index: index,
-	}
+/*
+ # Options is used to pass additional options to the database operations.
+ # It can be used to specify whether to use the primary database or to prepare the query.
+*/
+
+type Options struct {
+	// if you want to use the primary database, use this option
+	UsePrimaryDB bool
+	// if you want to prepare the query, use this option
+	PreparedName string // It should be unique for each diff type of query
 }
 
-func BoolValue(index int) *Value {
-	return &Value{
-		Type:  Bool,
-		Index: index,
+// GetOptions returns the first option from the options slice if available, otherwise returns an empty Options struct.
+// This is used internal purpose of the library
+func GetOptions(options ...Options) Options {
+	if len(options) > 0 {
+		return options[0]
 	}
+	return Options{}
 }
