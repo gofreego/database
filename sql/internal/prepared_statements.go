@@ -1,4 +1,4 @@
-package mysql
+package internal
 
 import "database/sql"
 
@@ -47,7 +47,7 @@ func (ss PreparedStatements) Close() error {
 	for _, stmt := range ss {
 		err := stmt.Statement.Close()
 		if err != nil {
-			return handleError(err)
+			return HandleError(err)
 		}
 	}
 	return nil

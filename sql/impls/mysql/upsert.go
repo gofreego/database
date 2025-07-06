@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mysql/parser"
+	"github.com/gofreego/database/sql/internal"
 )
 
 /*
@@ -20,46 +21,46 @@ func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options .
 	var err error
 	var res db.Result
 	if opt.PreparedName != "" {
-		var stmt *PreparedStatement
+		var stmt *internal.PreparedStatement
 		var ok bool
 		var query string
 		var values []any
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
 			query, values, err = parser.ParseUpsertQuery(record)
 			if err != nil {
-				return false, handleError(err)
+				return false, internal.HandleError(err)
 			}
 			ps, err := c.db.PrepareContext(ctx, query)
 			if err != nil {
-				return false, handleError(err)
+				return false, internal.HandleError(err)
 			}
-			stmt = NewPreparedStatement(ps)
+			stmt = internal.NewPreparedStatement(ps)
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
 		res, err = stmt.GetStatement().ExecContext(ctx, values...)
 		if err != nil {
-			return false, handleError(err)
+			return false, internal.HandleError(err)
 		}
 	} else {
 		query, values, err := parser.ParseUpsertQuery(record)
 		if err != nil {
-			return false, handleError(err)
+			return false, internal.HandleError(err)
 		}
 		res, err = c.db.ExecContext(ctx, query, values...)
 		if err != nil {
-			return false, handleError(err)
+			return false, internal.HandleError(err)
 		}
 	}
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return false, handleError(err)
+		return false, internal.HandleError(err)
 	}
 	if rowsAffected == 0 {
 		return false, sql.ErrNoRecordInserted
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		return false, handleError(err)
+		return false, internal.HandleError(err)
 	}
 	record.SetID(id)
 	return true, nil

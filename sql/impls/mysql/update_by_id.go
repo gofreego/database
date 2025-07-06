@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mysql/parser"
+	"github.com/gofreego/database/sql/internal"
 	"github.com/gofreego/goutils/logger"
 )
 
@@ -26,7 +27,7 @@ func (c *MysqlDatabase) UpdateByID(ctx context.Context, record sql.Record, optio
 	var err error
 	var query string
 	if opt.PreparedName != "" {
-		var stmt *PreparedStatement
+		var stmt *internal.PreparedStatement
 		var ok bool
 
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
@@ -39,7 +40,7 @@ func (c *MysqlDatabase) UpdateByID(ctx context.Context, record sql.Record, optio
 			if err != nil {
 				return false, fmt.Errorf("UpdateByID prepare failed: %w", err)
 			}
-			stmt = NewPreparedStatement(ps)
+			stmt = internal.NewPreparedStatement(ps)
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
 		res, err = stmt.GetStatement().ExecContext(ctx, values...)

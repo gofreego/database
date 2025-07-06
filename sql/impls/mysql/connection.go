@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofreego/database/sql/impls/unimplemented"
+	"github.com/gofreego/database/sql/internal"
 )
 
 type Config struct {
@@ -19,7 +20,7 @@ type Config struct {
 
 type MysqlDatabase struct {
 	db                 *db.DB
-	preparedStatements PreparedStatements
+	preparedStatements internal.PreparedStatements
 	unimplemented.Unimplemented
 }
 
@@ -38,7 +39,7 @@ func NewMysqlDatabase(ctx context.Context, config *Config) (*MysqlDatabase, erro
 	}
 	return &MysqlDatabase{
 		db:                 conn,
-		preparedStatements: NewPreparedStatements(),
+		preparedStatements: internal.NewPreparedStatements(),
 	}, nil
 }
 
@@ -48,5 +49,5 @@ func (c *MysqlDatabase) Ping(ctx context.Context) error {
 
 func (c *MysqlDatabase) Close(ctx context.Context) error {
 	c.preparedStatements.Close()
-	return handleError(c.db.Close())
+	return internal.HandleError(c.db.Close())
 }

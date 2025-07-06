@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mysql/parser"
+	"github.com/gofreego/database/sql/internal"
 )
 
 /*
@@ -25,15 +26,15 @@ func (c *MysqlDatabase) InsertMany(ctx context.Context, records []sql.Record, op
 	var res db.Result
 	query, values, err := parser.ParseInsertQuery(records...)
 	if err != nil {
-		return 0, handleError(err)
+		return 0, internal.HandleError(err)
 	}
 	res, err = c.db.ExecContext(ctx, query, values...)
 	if err != nil {
-		return 0, handleError(err)
+		return 0, internal.HandleError(err)
 	}
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return 0, handleError(err)
+		return 0, internal.HandleError(err)
 	}
 	if rowsAffected == 0 {
 		return 0, sql.ErrNoRecordInserted

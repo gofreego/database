@@ -1,4 +1,4 @@
-package mysql
+package internal
 
 import (
 	db "database/sql"
@@ -6,7 +6,7 @@ import (
 	"github.com/gofreego/database/sql"
 )
 
-func handleError(err error) error {
+func HandleError(err error) error {
 	if err == nil {
 		return nil
 	}
