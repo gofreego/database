@@ -13,7 +13,7 @@ setup-db-down:
 test:
 	make setup-db-up
 	echo "waiting for db to be up and running"
-	sleep 5
+	sleep 2
 	go test -v -count=1 -cover -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out
 	go tool cover -html=coverage.out -o coverage.html

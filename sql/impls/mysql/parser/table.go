@@ -16,6 +16,9 @@ var (
 )
 
 func parseTableName(table *sql.Table) (string, error) {
+	if table == nil {
+		return "", sql.NewInvalidQueryError("invalid table: table cannot be nil")
+	}
 	joinString, err := parseJoin(table.Join)
 	if err != nil {
 		return "", nil

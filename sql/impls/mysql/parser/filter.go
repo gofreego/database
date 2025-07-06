@@ -96,5 +96,5 @@ func parseOrderBy(orderBy *sql.Sort) (string, error) {
 		}
 		orderByStrings = append(orderByStrings, fmt.Sprintf("%s %s", field.Field, orderStr))
 	}
-	return fmt.Sprintf("ORDER BY (%s)", strings.Join(orderByStrings, ", ")), nil
+	return fmt.Sprintf("ORDER BY %s", strings.Join(orderByStrings, ", ")), nil
 }

@@ -50,7 +50,14 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 	}
 	switch condition.Operator {
 	case sql.EQ, sql.NEQ, sql.GT, sql.GTE, sql.LT, sql.LTE:
-		if condition.Value.Value != nil {
+		if condition.Value.IsValue() {
+			if condition.Value.IsColumn() {
+				if condition.Value.IsStringValue() {
+					return fmt.Sprintf("%s %s %s", condition.Field, operatorToStringMap[condition.Operator], condition.Value.Value), nil, nil
+				} else {
+					return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for %s operator must be a string, field: %s", operatorToStringMap[condition.Operator], condition.Field)
+				}
+			}
 			// If the value is a fixed value, we use it directly
 			return fmt.Sprintf("%s %s %s", condition.Field, operatorToStringMap[condition.Operator], getValue(condition.Value.Value)), nil, nil
 		}

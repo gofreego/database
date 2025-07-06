@@ -73,7 +73,7 @@ func Test_parseFilter(t *testing.T) {
 					Offset:  sql.NewIndexedValue(1),
 				},
 			},
-			want:    "WHERE (email = ? AND age > 30 AND name LIKE ?) GROUP BY (city, country) ORDER BY (age ASC) LIMIT 10 OFFSET ?",
+			want:    "WHERE (email = ? AND age > 30 AND name LIKE ?) GROUP BY (city, country) ORDER BY age ASC LIMIT 10 OFFSET ?",
 			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(2).WithType(sql.String), sql.NewIndexedValue(1).WithType(sql.Int)},
 			wantErr: false,
 		},

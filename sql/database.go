@@ -2,6 +2,7 @@ package sql
 
 import (
 	"context"
+	"reflect"
 )
 
 type SQLDatabase interface {
@@ -51,6 +52,7 @@ func (t *Table) WithInnerJoin(table *Table, on *Condition) *Table {
 	t.Join = append(t.Join, Join{
 		Table: table,
 		On:    on,
+		Type:  InnerJoin,
 	})
 	return t
 }
@@ -59,6 +61,7 @@ func (t *Table) WithLeftJoin(table *Table, on *Condition) *Table {
 	t.Join = append(t.Join, Join{
 		Table: table,
 		On:    on,
+		Type:  LeftJoin,
 	})
 	return t
 }
@@ -67,6 +70,7 @@ func (t *Table) WithRightJoin(table *Table, on *Condition) *Table {
 	t.Join = append(t.Join, Join{
 		Table: table,
 		On:    on,
+		Type:  RightJoin,
 	})
 	return t
 }
@@ -354,6 +358,7 @@ const (
 	String
 	Array
 	Int
+	Column
 )
 
 type Value struct {
@@ -380,6 +385,21 @@ func (v *Value) WithCount(count int) *Value {
 	return v
 }
 
+func (v *Value) IsColumn() bool {
+	return v.Type == Column
+}
+
+func (v *Value) IsStringValue() bool {
+	if v.Value == nil {
+		return false
+	}
+	return reflect.TypeOf(v.Value).Kind() == reflect.String
+}
+
+func (v *Value) IsValue() bool {
+	return v.Value != nil
+}
+
 // NewIndexedValue creates a new Value with the specified index.
 // This is used for parameterized queries where the value is not fixed and is passed as a parameter.
 // if value is used for IN/NOTIN operators. use WithCount to specify the number of values to use from the values slice
@@ -397,6 +417,13 @@ func NewValue(value any) *Value {
 	return &Value{
 		Type:  Any,
 		Value: value,
+	}
+}
+
+func NewColumnValue(column string) *Value {
+	return &Value{
+		Type:  Column,
+		Value: column,
 	}
 }
 
