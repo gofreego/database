@@ -93,14 +93,14 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 		// ISNULL and ISNOTNULL do not require a value, so we do not append anything to conditionValues
 	case sql.EXISTS, sql.NOTEXISTS:
 		// not implemented in this parser, but can be added later
-		return "", nil, fmt.Errorf("failed to parse condition, error: EXISTS and NOTEXISTS operators are not implemented in this parser")
+		return "", nil, fmt.Errorf("invalid condition, error: EXISTS and NOTEXISTS operators are not implemented in this parser")
 	case sql.AND, sql.OR:
 		var conditionStrings []string
 		var conditionValues []*sql.Value
 		for _, subCondition := range condition.Conditions {
 			subConditionString, subConditionValues, err := parseCondition(&subCondition)
 			if err != nil {
-				return "", nil, fmt.Errorf("failed to parse sub-condition: %w", err)
+				return "", nil, fmt.Errorf("invalid sub-condition for operator: %s, error: %s", condition.Operator.String(), err.Error())
 			}
 			if subConditionString != "" {
 				conditionStrings = append(conditionStrings, subConditionString)
@@ -108,19 +108,19 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 			}
 		}
 		if len(conditionStrings) == 0 {
-			return "", nil, fmt.Errorf("failed to parse condition, error: no valid sub-conditions found for logical operator: %s", operatorToStringMap[condition.Operator])
+			return "", nil, fmt.Errorf("invalid condition, error: no valid sub-conditions found for logical operator: %s", operatorToStringMap[condition.Operator])
 		}
 		return fmt.Sprintf("(%s)", strings.Join(conditionStrings, fmt.Sprintf(" %s ", operatorToStringMap[condition.Operator]))), conditionValues, nil
 	case sql.NOT:
 		if len(condition.Conditions) != 1 {
-			return "", nil, fmt.Errorf("failed to parse condition, error: NOT operator should have exactly one sub-condition")
+			return "", nil, fmt.Errorf("invalid condition, error: NOT operator should have exactly one sub-condition")
 		}
 		subConditionString, subConditionValues, err := parseCondition(&condition.Conditions[0])
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to parse sub-condition for NOT operator: %s", err.Error())
+			return "", nil, fmt.Errorf("invalid sub-condition for NOT operator: %s", err.Error())
 		}
 		if subConditionString == "" {
-			return "", nil, fmt.Errorf("failed to parse condition, error: no valid sub-condition found for NOT operator")
+			return "", nil, fmt.Errorf("invalid condition, error: no valid sub-condition found for NOT operator")
 		}
 		return fmt.Sprintf("NOT (%s)", subConditionString), subConditionValues, nil
 	case sql.BETWEEN, sql.NOTBETWEEN:
@@ -139,7 +139,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 			return fmt.Sprintf("(%s %s ? AND ?)", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{condition.Value.WithType(sql.Array).WithCount(2)}, nil
 		}
 	default:
-		return "", nil, fmt.Errorf("failed to parse condition, error: invalid operator: %d, for field: %s", condition.Operator, condition.Field)
+		return "", nil, fmt.Errorf("invalid condition, error: invalid operator: %d, for field: %s", condition.Operator, condition.Field)
 	}
 }
 

@@ -38,9 +38,7 @@ func (u *User) SetID(id int64) {
 
 // Table implements sql.Record.
 func (u *User) Table() *sql.Table {
-	return &sql.Table{
-		Name: "users",
-	}
+	return sql.NewTable("users")
 }
 
 // Values implements sql.Record.

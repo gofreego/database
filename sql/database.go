@@ -82,6 +82,7 @@ type Rows interface {
 // record fields should be exported and should have a sql tag for the column name
 type Record interface {
 	ID() int64
+	// This is useful to remove id column while inserting the records
 	IdColumn() string
 	SetID(id int64)
 	Table() *Table
