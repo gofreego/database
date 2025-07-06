@@ -58,8 +58,13 @@ func TestInsertAndGet(t *testing.T) {
 		if err := conn.Ping(tt.args.ctx); (err != nil) != tt.wantErr {
 			t.Errorf("Ping() error = %v, wantErr %v", err, tt.wantErr)
 		}
+		user := &records.User{Id: 1}
+		if err := conn.GetByID(tt.args.ctx, user); err != sql.ErrNoRecordFound {
+			t.Errorf("GetByID() error = %v, wantErr %v", err, sql.ErrNoRecordFound)
+			return true
+		}
 
-		user := &records.User{
+		user = &records.User{
 			Name:         "John Doe",
 			Email:        "john.doe@example.com",
 			PasswordHash: "password123",

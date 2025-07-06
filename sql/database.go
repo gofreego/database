@@ -407,6 +407,7 @@ func NewValue(value any) *Value {
 
 type Options struct {
 	// if you want to use the primary database, use this option
+	// no need to set this in case of write operations. It by default chooses primary db.
 	UsePrimaryDB bool
 	// if you want to prepare the query, use this option
 	PreparedName string // It should be unique for each diff type of query

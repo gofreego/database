@@ -3,6 +3,7 @@ package parser
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/gofreego/database/sql"
 )
@@ -72,9 +73,105 @@ func Test_parseFilter(t *testing.T) {
 					Offset:  sql.NewIndexedValue(1),
 				},
 			},
-			want:    "WHERE (email = ? AND age > 30 AND name LIKE ?) GROUP BY city, country ORDER BY age ASC LIMIT 10 OFFSET ?",
+			want:    "WHERE (email = ? AND age > 30 AND name LIKE ?) GROUP BY (city, country) ORDER BY (age ASC) LIMIT 10 OFFSET ?",
 			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(2).WithType(sql.String), sql.NewIndexedValue(1).WithType(sql.Int)},
 			wantErr: false,
+		},
+		{
+			name: "test with LIKE fixed value",
+			args: args{
+				filter: &sql.Filter{
+					Condition: &sql.Condition{
+						Field:    "name",
+						Value:    sql.NewValue("john%"),
+						Operator: sql.LIKE,
+					},
+				},
+			},
+			want:    "WHERE name LIKE 'john%'",
+			want1:   nil,
+			wantErr: false,
+		},
+		{
+			name: "test with IN fixed values",
+			args: args{
+				filter: &sql.Filter{
+					Condition: &sql.Condition{
+						Field:    "status",
+						Value:    sql.NewValue([]any{"active", "pending"}),
+						Operator: sql.IN,
+					},
+				},
+			},
+			want:    "WHERE status IN ('active', 'pending')",
+			want1:   nil,
+			wantErr: false,
+		},
+		{
+			name: "test with IS NULL",
+			args: args{
+				filter: &sql.Filter{
+					Condition: &sql.Condition{
+						Field:    "deleted_at",
+						Operator: sql.ISNULL,
+					},
+				},
+			},
+			want:    "WHERE deleted_at IS NULL",
+			want1:   nil,
+			wantErr: false,
+		},
+		{
+			name: "test with BETWEEN fixed values",
+			args: args{
+				filter: &sql.Filter{
+					Condition: &sql.Condition{
+						Field:    "age",
+						Value:    sql.NewValue([]any{18, 65}),
+						Operator: sql.BETWEEN,
+					},
+				},
+			},
+			want:    "WHERE age BETWEEN 18 AND 65",
+			want1:   nil,
+			wantErr: false,
+		},
+		{
+			name: "test with time value",
+			args: args{
+				filter: &sql.Filter{
+					Condition: &sql.Condition{
+						Field:    "created_at",
+						Value:    sql.NewValue(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
+						Operator: sql.GT,
+					},
+				},
+			},
+			want:    "WHERE created_at > '2023-01-01T00:00:00Z'",
+			want1:   nil,
+			wantErr: false,
+		},
+		{
+			name: "test with invalid limit value",
+			args: args{
+				filter: &sql.Filter{
+					Limit: sql.NewValue("not-an-int"),
+				},
+			},
+			want:    "",
+			want1:   nil,
+			wantErr: true,
+		},
+		{
+			name: "test with invalid offset value",
+			args: args{
+				filter: &sql.Filter{
+					Offset: sql.NewValue(-1),
+				},
+			},
+			want:    "",
+			want1:   nil,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

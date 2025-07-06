@@ -52,7 +52,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 	case sql.EQ, sql.NEQ, sql.GT, sql.GTE, sql.LT, sql.LTE:
 		if condition.Value.Value != nil {
 			// If the value is a fixed value, we use it directly
-			return fmt.Sprintf("%s %s %v", condition.Field, operatorToStringMap[condition.Operator], condition.Value.Value), nil, nil
+			return fmt.Sprintf("%s %s %s", condition.Field, operatorToStringMap[condition.Operator], getValue(condition.Value.Value)), nil, nil
 		}
 		return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{condition.Value}, nil
 	case sql.IN, sql.NOTIN:
@@ -63,7 +63,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 					return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for IN/NOTIN must be a non-empty slice, field: %s", condition.Field)
 				}
 				// If the value is fixed we use it directly
-				return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], getValueString(slice)), nil, nil
+				return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], getValueString(slice...)), nil, nil
 			} else {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for IN/NOTIN must be a slice, field: %s", condition.Field)
 			}
@@ -81,7 +81,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 				if str == "" {
 					return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for LIKE/NOTLIKE must be a non-empty string, field: %s", condition.Field)
 				}
-				return fmt.Sprintf("%s %s '%s'", condition.Field, operatorToStringMap[condition.Operator], str), nil, nil
+				return fmt.Sprintf("%s %s %s", condition.Field, operatorToStringMap[condition.Operator], getValue(str)), nil, nil
 			} else {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for LIKE/NOTLIKE must be a string, field: %s", condition.Field)
 			}
@@ -146,14 +146,18 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 func getValueString(values ...any) string {
 	var valueStrings []string
 	for _, value := range values {
-		switch v := value.(type) {
-		case string:
-			valueStrings = append(valueStrings, fmt.Sprintf("'%s'", v))
-		case time.Time:
-			valueStrings = append(valueStrings, fmt.Sprintf("'%s'", v.Format(time.RFC3339)))
-		default:
-			valueStrings = append(valueStrings, fmt.Sprintf("%v", v))
-		}
+		valueStrings = append(valueStrings, getValue(value))
 	}
 	return strings.Join(valueStrings, ", ")
+}
+
+func getValue(value any) string {
+	switch v := value.(type) {
+	case string:
+		return fmt.Sprintf("'%s'", v)
+	case time.Time:
+		return fmt.Sprintf("'%s'", v.Format(time.RFC3339))
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }

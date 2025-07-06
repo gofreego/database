@@ -74,7 +74,7 @@ func parseGroupBy(groupBy *sql.GroupBy) string {
 	if groupBy == nil {
 		return ""
 	}
-	return "GROUP BY " + strings.Join(groupBy.Fields(), ", ")
+	return fmt.Sprintf("GROUP BY (%s)", strings.Join(groupBy.Fields(), ", "))
 }
 
 var orderToStringMap = map[sql.Order]string{
@@ -96,5 +96,5 @@ func parseOrderBy(orderBy *sql.Sort) (string, error) {
 		}
 		orderByStrings = append(orderByStrings, fmt.Sprintf("%s %s", field.Field, orderStr))
 	}
-	return "ORDER BY " + strings.Join(orderByStrings, ", "), nil
+	return fmt.Sprintf("ORDER BY (%s)", strings.Join(orderByStrings, ", ")), nil
 }

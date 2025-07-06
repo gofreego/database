@@ -47,7 +47,7 @@ func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options 
 	return handleError(record.Scan(row))
 }
 
-func (c *MysqlDatabase) GetByFilter(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
+func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
 	var conditionValues []*sql.Value
