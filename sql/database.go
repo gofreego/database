@@ -15,8 +15,6 @@ type SQLDatabase interface {
 	Get(ctx context.Context, filter *Filter, values []any, record Records, options ...Options) error
 	// This will update the record with the id of the record
 	UpdateByID(ctx context.Context, record Record, options ...Options) error
-	// This will update the records with the id of the records
-	UpdateMany(ctx context.Context, records []Record, options ...Options) error
 	// This will update the record with condition
 	Update(ctx context.Context, updates *Updates, condition *Condition, values []any, options ...Options) error
 	// This will soft delete the record with the id of the record
@@ -438,6 +436,7 @@ type Options struct {
 	UsePrimaryDB bool
 	// if you want to prepare the query, use this option
 	PreparedName string // It should be unique for each diff type of query
+	Timeout      int64  // Timeout in milliseconds for the query execution
 }
 
 // GetOptions returns the first option from the options slice if available, otherwise returns an empty Options struct.

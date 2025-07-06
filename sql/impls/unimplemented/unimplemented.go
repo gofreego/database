@@ -42,10 +42,6 @@ func (u *Unimplemented) UpdateByID(ctx context.Context, record sql.Record, optio
 	return errors.New("UpdateByID method is not implemented")
 }
 
-func (u *Unimplemented) UpdateMany(ctx context.Context, records []sql.Record, options ...sql.Options) error {
-	return errors.New("UpdateMany method is not implemented")
-}
-
 func (u *Unimplemented) Update(ctx context.Context, updates *sql.Updates, condition *sql.Condition, values []any, options ...sql.Options) error {
 	return errors.New("UpdateByCondition method is not implemented")
 }
