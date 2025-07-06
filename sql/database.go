@@ -10,19 +10,19 @@ type SQLDatabase interface {
 	Close(ctx context.Context) error
 	Insert(ctx context.Context, record Record, options ...Options) error
 	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
-	Upsert(ctx context.Context, record Record, options ...Options) error
+	Upsert(ctx context.Context, record Record, options ...Options) (bool, error)
 	GetByID(ctx context.Context, record Record, options ...Options) error
 	Get(ctx context.Context, filter *Filter, values []any, record Records, options ...Options) error
 	// This will update the record with the id of the record
-	UpdateByID(ctx context.Context, record Record, options ...Options) error
+	UpdateByID(ctx context.Context, record Record, options ...Options) (bool, error)
 	// This will update the record with condition
-	Update(ctx context.Context, updates *Updates, condition *Condition, values []any, options ...Options) error
+	Update(ctx context.Context, updates *Updates, condition *Condition, values []any, options ...Options) (int64, error)
 	// This will soft delete the record with the id of the record
-	SoftDelete(ctx context.Context, id int64, options ...Options) error
+	SoftDelete(ctx context.Context, id int64, options ...Options) (bool, error)
 	// This will delete the record with the id of the record
-	DeleteByID(ctx context.Context, id int64, options ...Options) error
+	DeleteByID(ctx context.Context, id int64, options ...Options) (bool, error)
 	// This will delete the record with condition
-	Delete(ctx context.Context, condition *Condition, values []any, options ...Options) error
+	Delete(ctx context.Context, condition *Condition, values []any, options ...Options) (int64, error)
 }
 
 /*

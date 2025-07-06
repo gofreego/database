@@ -11,6 +11,7 @@ const (
 	ErrCodeNoRecordFound
 	ErrCodeNoRecordInserted
 	ErrCodeInvalidQuery
+	ErrUnknownDatabaseError
 )
 
 type Error struct {
@@ -35,6 +36,14 @@ var (
 	ErrNoRecordFound    = &Error{message: "no record found", code: ErrCodeNoRecordFound}
 	ErrNoRecordInserted = &Error{message: "no record inserted", code: ErrCodeNoRecordInserted}
 )
+
+// only if its a unknown error
+func NewDatabaseError(err error) error {
+	return &Error{
+		message: err.Error(),
+		code:    ErrUnknownDatabaseError,
+	}
+}
 
 func NewInvalidQueryError(message string, args ...any) error {
 	return &Error{

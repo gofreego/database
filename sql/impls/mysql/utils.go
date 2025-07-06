@@ -7,8 +7,11 @@ import (
 )
 
 func handleError(err error) error {
+	if err == nil {
+		return nil
+	}
 	if err == db.ErrNoRows {
 		return sql.ErrNoRecordFound
 	}
-	return err
+	return sql.NewDatabaseError(err)
 }

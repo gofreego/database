@@ -18,22 +18,23 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 	var err error
 	var res db.Result
 	if opt.PreparedName != "" {
-		var stmt *db.Stmt
+		var stmt *PreparedStatement
 		var ok bool
 		var query string
-		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
+		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
 			query, _, err = parser.ParseInsertQuery(record)
 			if err != nil {
 				return handleError(err)
 			}
-			stmt, err = c.db.PrepareContext(ctx, query)
+			ps, err := c.db.PrepareContext(ctx, query)
 			if err != nil {
 				return handleError(err)
 			}
+			stmt = NewPreparedStatement(ps)
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
 
-		res, err = stmt.ExecContext(ctx, record.Values()...)
+		res, err = stmt.GetStatement().ExecContext(ctx, record.Values()...)
 		if err != nil {
 			return handleError(err)
 		}

@@ -19,7 +19,7 @@ type Config struct {
 
 type MysqlDatabase struct {
 	db                 *db.DB
-	preparedStatements map[string]*db.Stmt
+	preparedStatements PreparedStatements
 	unimplemented.Unimplemented
 }
 
@@ -38,7 +38,7 @@ func NewMysqlDatabase(ctx context.Context, config *Config) (*MysqlDatabase, erro
 	}
 	return &MysqlDatabase{
 		db:                 conn,
-		preparedStatements: make(map[string]*db.Stmt),
+		preparedStatements: NewPreparedStatements(),
 	}, nil
 }
 
@@ -47,11 +47,6 @@ func (c *MysqlDatabase) Ping(ctx context.Context) error {
 }
 
 func (c *MysqlDatabase) Close(ctx context.Context) error {
-	for _, stmt := range c.preparedStatements {
-		err := stmt.Close()
-		if err != nil {
-			return handleError(err)
-		}
-	}
+	c.preparedStatements.Close()
 	return handleError(c.db.Close())
 }

@@ -15,51 +15,52 @@ Returns 0, nil if no records are provided.
 Returns 0, sql.ErrNoRecordInserted if no records are inserted.
 */
 
-func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options ...sql.Options) error {
+func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
 	opt := sql.GetOptions(options...)
 	var err error
 	var res db.Result
 	if opt.PreparedName != "" {
-		var stmt *db.Stmt
+		var stmt *PreparedStatement
 		var ok bool
 		var query string
 		var values []any
-		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
+		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
 			query, values, err = parser.ParseUpsertQuery(record)
 			if err != nil {
-				return handleError(err)
+				return false, handleError(err)
 			}
-			stmt, err = c.db.PrepareContext(ctx, query)
+			ps, err := c.db.PrepareContext(ctx, query)
 			if err != nil {
-				return handleError(err)
+				return false, handleError(err)
 			}
+			stmt = NewPreparedStatement(ps)
 			c.preparedStatements[opt.PreparedName] = stmt
 		}
-		res, err = stmt.ExecContext(ctx, values...)
+		res, err = stmt.GetStatement().ExecContext(ctx, values...)
 		if err != nil {
-			return handleError(err)
+			return false, handleError(err)
 		}
 	} else {
 		query, values, err := parser.ParseUpsertQuery(record)
 		if err != nil {
-			return handleError(err)
+			return false, handleError(err)
 		}
 		res, err = c.db.ExecContext(ctx, query, values...)
 		if err != nil {
-			return handleError(err)
+			return false, handleError(err)
 		}
 	}
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return handleError(err)
+		return false, handleError(err)
 	}
 	if rowsAffected == 0 {
-		return sql.ErrNoRecordInserted
+		return false, sql.ErrNoRecordInserted
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
-		return handleError(err)
+		return false, handleError(err)
 	}
 	record.SetID(id)
-	return nil
+	return true, nil
 }

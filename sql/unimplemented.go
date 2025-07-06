@@ -1,7 +1,6 @@
 package sql
 
 type UnimplementedRecord struct {
-	Record
 }
 
 func (u *UnimplementedRecord) ID() int64 {

@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	db "database/sql"
 
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/impls/mysql/parser"
@@ -13,23 +12,24 @@ func (c *MysqlDatabase) GetByID(ctx context.Context, record sql.Record, options 
 	opt := sql.GetOptions(options...)
 	var err error
 	if opt.PreparedName != "" {
-		var stmt *db.Stmt
+		var stmt *PreparedStatement
 		var ok bool
 
-		if stmt, ok = c.preparedStatements[opt.PreparedName]; !ok {
+		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
 			query, err := parser.ParseGetByIDQuery(record)
 			if err != nil {
 				return handleError(err)
 			}
 			logger.Debug(ctx, "GetByID query: %s", query)
-			stmt, err = c.db.PrepareContext(ctx, query)
+			ps, err := c.db.PrepareContext(ctx, query)
 			if err != nil {
 				return handleError(err)
 			}
-			c.preparedStatements[opt.PreparedName] = stmt
+			stmt = NewPreparedStatement(ps)
+			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
 
-		row := stmt.QueryRowContext(ctx, record.ID())
+		row := stmt.GetStatement().QueryRowContext(ctx, record.ID())
 		if err = row.Err(); err != nil {
 			return handleError(err)
 		}
