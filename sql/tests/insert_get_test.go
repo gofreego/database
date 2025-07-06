@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -319,6 +320,219 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 			if err := conn.Close(tt.args.ctx); err != nil {
 				t.Errorf("Close() failed: %v", err)
 			}
+		})
+	}
+}
+
+func TestInsertAndGet_EdgeCases(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "mysql insert and get edge cases",
+			args: args{
+				ctx:    context.Background(),
+				config: &mysqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
+				t.Errorf("MigrationUP() failed: %v", err)
+				return
+			}
+			defer func() {
+				if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
+					t.Errorf("MigrationDown() failed: %v", err)
+					return
+				}
+			}()
+			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			if err != nil {
+				t.Fatalf("NewConnection() error = %v", err)
+				return
+			}
+			defer conn.Close(tt.args.ctx)
+
+			// Insert with empty strings and special characters
+			edgeUser := &records.User{
+				Name:         "",
+				Email:        "!@#$%^&*()_+|}{:?><,./;'[]\\=-`~",
+				PasswordHash: "p@$$w0rd!",
+				IsActive:     1,
+				CreatedAt:    time.Now().UnixMilli(),
+				UpdatedAt:    time.Now().UnixMilli(),
+			}
+			if err := conn.Insert(tt.args.ctx, edgeUser); err != nil {
+				t.Errorf("Insert() failed: %v", err)
+				return
+			}
+			if edgeUser.Id == 0 {
+				t.Errorf("Insert() failed: id is 0")
+				return
+			}
+			// Get by ID
+			getUser := &records.User{Id: edgeUser.Id}
+			if err := conn.GetByID(tt.args.ctx, getUser); err != nil {
+				t.Errorf("GetByID() failed: %v", err)
+				return
+			}
+			if getUser.Email != edgeUser.Email {
+				t.Errorf("GetByID() failed: email mismatch")
+				return
+			}
+
+			// Insert with future and past timestamps
+			futureUser := &records.User{
+				Name:         "Future",
+				Email:        "future@example.com",
+				PasswordHash: "futurepass",
+				IsActive:     1,
+				CreatedAt:    time.Now().Add(24 * time.Hour).UnixMilli(),
+				UpdatedAt:    time.Now().Add(24 * time.Hour).UnixMilli(),
+			}
+			if err := conn.Insert(tt.args.ctx, futureUser); err != nil {
+				t.Errorf("Insert() failed: %v", err)
+				return
+			}
+			pastUser := &records.User{
+				Name:         "Past",
+				Email:        "past@example.com",
+				PasswordHash: "pastpass",
+				IsActive:     1,
+				CreatedAt:    time.Now().Add(-24 * time.Hour).UnixMilli(),
+				UpdatedAt:    time.Now().Add(-24 * time.Hour).UnixMilli(),
+			}
+			if err := conn.Insert(tt.args.ctx, pastUser); err != nil {
+				t.Errorf("Insert() failed: %v", err)
+				return
+			}
+
+			// Get by non-existent ID
+			nonExistent := &records.User{Id: 999999}
+			err = conn.GetByID(tt.args.ctx, nonExistent)
+			if err != sql.ErrNoRecordFound {
+				t.Errorf("GetByID() non-existent: got %v, want %v", err, sql.ErrNoRecordFound)
+			}
+		})
+	}
+}
+
+func TestMysqlDatabase_GetByFilter_Advanced(t *testing.T) {
+	tests := []testCase{
+		{
+			name: "mysql get by filter advanced",
+			args: args{
+				ctx:    context.Background(),
+				config: &mysqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
+				t.Errorf("MigrationUP() failed: %v", err)
+				return
+			}
+			defer func() {
+				if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
+					t.Errorf("MigrationDown() failed: %v", err)
+					return
+				}
+			}()
+			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			if err != nil {
+				t.Fatalf("NewConnection() error = %v", err)
+				return
+			}
+			defer conn.Close(tt.args.ctx)
+
+			// Insert some users for filter tests
+			for i := 0; i < 5; i++ {
+				_ = conn.Insert(tt.args.ctx, &records.User{
+					Name:         "FilterUser",
+					Email:        fmt.Sprintf("filteruser%v@example.com", 'A'+i),
+					PasswordHash: "filterpass",
+					IsActive:     i % 2,
+					CreatedAt:    time.Now().UnixMilli(),
+					UpdatedAt:    time.Now().UnixMilli(),
+				})
+			}
+
+			// LIKE filter
+			users := &records.Users{}
+			likeFilter := &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "name",
+					Value:    sql.NewValue("FilterUser"),
+					Operator: sql.LIKE,
+				},
+			}
+			if err := conn.Get(tt.args.ctx, likeFilter, nil, users); err != nil {
+				t.Errorf("GetByFilter() LIKE failed: %v", err)
+				return
+			}
+			if len(users.Users) == 0 {
+				t.Errorf("GetByFilter() LIKE failed: expected >0 users")
+				return
+			}
+
+			// IN filter
+			users = &records.Users{}
+			inFilter := &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "is_active",
+					Value:    sql.NewValue([]any{0, 1}),
+					Operator: sql.IN,
+				},
+			}
+			if err := conn.Get(tt.args.ctx, inFilter, nil, users); err != nil {
+				t.Errorf("GetByFilter() IN failed: %v", err)
+				return
+			}
+			if len(users.Users) < 2 {
+				t.Errorf("GetByFilter() IN failed: expected >=2 users")
+				return
+			}
+
+			// IS NULL filter (should be 0)
+			users = &records.Users{}
+			isNullFilter := &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "deleted_at",
+					Operator: sql.ISNULL,
+				},
+			}
+			_ = conn.Get(tt.args.ctx, isNullFilter, nil, users) // Should not error, but likely 0 results
+
+			// BETWEEN filter (CreatedAt in range)
+			users = &records.Users{}
+			from := time.Now().Add(-1 * time.Hour).UnixMilli()
+			to := time.Now().Add(1 * time.Hour).UnixMilli()
+			betweenFilter := &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "created_at",
+					Value:    sql.NewValue([]any{from, to}),
+					Operator: sql.BETWEEN,
+				},
+			}
+			if err := conn.Get(tt.args.ctx, betweenFilter, nil, users); err != nil {
+				t.Errorf("GetByFilter() BETWEEN failed: %v", err)
+				return
+			}
+
+			// Sorting, limit, offset
+			users = &records.Users{}
+			sortFilter := &sql.Filter{
+				Sort:   sql.NewSort().Add("created_at", sql.Desc),
+				Limit:  sql.NewValue(int64(2)),
+				Offset: sql.NewValue(int64(1)),
+			}
+			_ = conn.Get(tt.args.ctx, sortFilter, nil, users)
+			// No error expected, just check code path
 		})
 	}
 }
