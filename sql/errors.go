@@ -36,9 +36,9 @@ var (
 	ErrNoRecordInserted = &Error{message: "no record inserted", code: ErrCodeNoRecordInserted}
 )
 
-func NewInvalidQueryError(message string) error {
+func NewInvalidQueryError(message string, args ...any) error {
 	return &Error{
-		message: message,
+		message: fmt.Sprintf(message, args...),
 		code:    ErrCodeInvalidQuery,
 	}
 }

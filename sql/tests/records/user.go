@@ -10,6 +10,7 @@ type User struct {
 	IsActive     int    `sql:"is_active"`
 	CreatedAt    int64  `sql:"created_at"`
 	UpdatedAt    int64  `sql:"updated_at"`
+	sql.UnimplementedRecord
 }
 
 func (u *User) IdColumn() string {

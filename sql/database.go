@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"fmt"
 )
 
 type SQLDatabase interface {
@@ -12,17 +11,19 @@ type SQLDatabase interface {
 	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
 	Upsert(ctx context.Context, record Record, options ...Options) error
 	GetByID(ctx context.Context, record Record, options ...Options) error
-	GetByFilter(ctx context.Context, filter *Filter, values []any, record Records, options ...Options) error
+	Get(ctx context.Context, filter *Filter, values []any, record Records, options ...Options) error
 	// This will update the record with the id of the record
 	UpdateByID(ctx context.Context, record Record, options ...Options) error
 	// This will update the records with the id of the records
 	UpdateMany(ctx context.Context, records []Record, options ...Options) error
 	// This will update the record with condition
-	UpdateByCondition(ctx context.Context, updates *Updates, condition *Condition, values []any, options ...Options) error
+	Update(ctx context.Context, updates *Updates, condition *Condition, values []any, options ...Options) error
+	// This will soft delete the record with the id of the record
+	SoftDelete(ctx context.Context, id int64, options ...Options) error
 	// This will delete the record with the id of the record
 	DeleteByID(ctx context.Context, id int64, options ...Options) error
 	// This will delete the record with condition
-	DeleteByCondition(ctx context.Context, condition *Condition, values []any, options ...Options) error
+	Delete(ctx context.Context, condition *Condition, values []any, options ...Options) error
 }
 
 /*
@@ -89,6 +90,7 @@ type Record interface {
 	Columns() []string
 	Values() []any
 	Scan(row Row) error
+	SetDeleted(deleted bool)
 }
 
 type Records interface {
@@ -235,38 +237,38 @@ func (c *Condition) Validate() error {
 	switch c.Operator {
 	case AND, OR, NOT:
 		if c.Field != "" || c.Value != nil {
-			return fmt.Errorf("invalid condition: value should be nil and field should be empty for AND/OR/NOT operator,for filed: %s, Operator:%s", c.Field, c.Operator.String())
+			return NewInvalidQueryError("invalid condition: value should be nil and field should be empty for AND/OR/NOT operator,for filed: %s, Operator:%s", c.Field, c.Operator.String())
 		}
 		if len(c.Conditions) == 0 {
-			return fmt.Errorf("invalid condition: conditions should not be empty for AND/OR/NOT operator")
+			return NewInvalidQueryError("invalid condition: conditions should not be empty for AND/OR/NOT operator")
 		}
 		return nil
 	case EQ, NEQ, GT, GTE, LT, LTE, IN, NOTIN, LIKE, NOTLIKE, REGEXP, BETWEEN, NOTBETWEEN:
 		if c.Field == "" {
-			return fmt.Errorf("invalid condition: field should not be empty for operator %s", c.Operator.String())
+			return NewInvalidQueryError("invalid condition: field should not be empty for operator %s", c.Operator.String())
 		}
 		if c.Value == nil {
-			return fmt.Errorf("invalid condition: value should not be nil for operator %s", c.Operator.String())
+			return NewInvalidQueryError("invalid condition: value should not be nil for operator %s", c.Operator.String())
 		}
 		if len(c.Conditions) > 0 {
-			return fmt.Errorf("invalid condition: conditions should be empty for operator %s, for field: %s", c.Operator.String(), c.Field)
+			return NewInvalidQueryError("invalid condition: conditions should be empty for operator %s, for field: %s", c.Operator.String(), c.Field)
 		}
 		return nil
 	case ISNULL, ISNOTNULL:
 		if c.Field == "" {
-			return fmt.Errorf("invalid condition: field should not be empty for operator %s", c.Operator.String())
+			return NewInvalidQueryError("invalid condition: field should not be empty for operator %s", c.Operator.String())
 		}
 		if c.Value != nil {
-			return fmt.Errorf("invalid condition: value should be nil for operator %s, for field: %s", c.Operator.String(), c.Field)
+			return NewInvalidQueryError("invalid condition: value should be nil for operator %s, for field: %s", c.Operator.String(), c.Field)
 		}
 		if len(c.Conditions) > 0 {
-			return fmt.Errorf("invalid condition: conditions should be empty for operator %s, for field: %s", c.Operator.String(), c.Field)
+			return NewInvalidQueryError("invalid condition: conditions should be empty for operator %s, for field: %s", c.Operator.String(), c.Field)
 		}
 		return nil
 	case EXISTS, NOTEXISTS:
-		return fmt.Errorf("invalid condition: EXISTS and NOT EXISTS operators not supported, field: %s, Operator: %s", c.Field, c.Operator.String())
+		return NewInvalidQueryError("invalid condition: EXISTS and NOT EXISTS operators not supported, field: %s, Operator: %s", c.Field, c.Operator.String())
 	default:
-		return fmt.Errorf("invalid condition: unknown operator %s, for field: %s", c.Operator.String(), c.Field)
+		return NewInvalidQueryError("invalid condition: unknown operator %s, for field: %s", c.Operator.String(), c.Field)
 	}
 }
 

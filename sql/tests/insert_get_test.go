@@ -242,7 +242,7 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 					},
 				}
 				values := []any{user.Email}
-				if err := conn.GetByFilter(tt.args.ctx, getFilter, values, users); err != nil {
+				if err := conn.Get(tt.args.ctx, getFilter, values, users); err != nil {
 					t.Errorf("GetByFilter() email failed: %v", err)
 					return
 				}
@@ -282,7 +282,7 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 					},
 				}
 				values := []any{1} // Get all active users
-				if err := conn.GetByFilter(tt.args.ctx, getFilter, values, users); err != nil {
+				if err := conn.Get(tt.args.ctx, getFilter, values, users); err != nil {
 					t.Errorf("GetByFilter() is_active failed: %v", err)
 					return
 				}

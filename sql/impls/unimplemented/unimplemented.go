@@ -8,6 +8,7 @@ import (
 )
 
 type Unimplemented struct {
+	sql.SQLDatabase
 }
 
 func (u *Unimplemented) Ping(ctx context.Context) error {
@@ -56,4 +57,8 @@ func (u *Unimplemented) DeleteByID(ctx context.Context, id int64, options ...sql
 
 func (u *Unimplemented) DeleteByCondition(ctx context.Context, condition *sql.Condition, values []any, options ...sql.Options) error {
 	return errors.New("DeleteByCondition method is not implemented")
+}
+
+func (u *Unimplemented) SoftDelete(ctx context.Context, id int64, options ...sql.Options) error {
+	return errors.New("SoftDeleteByID method is not implemented")
 }
