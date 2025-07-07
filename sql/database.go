@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-type SQLDatabase interface {
+type Database interface {
 	Ping(ctx context.Context) error
 	Close(ctx context.Context) error
 	Insert(ctx context.Context, record Record, options ...Options) error

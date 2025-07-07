@@ -24,7 +24,7 @@ type Config struct {
 	MSSQL      *mssql.Config      `yaml:"MSSQL" json:"MSSQL"`
 }
 
-func NewSQLDatabase(ctx context.Context, config *Config) (sql.SQLDatabase, error) {
+func NewDatabase(ctx context.Context, config *Config) (sql.Database, error) {
 	switch config.Name {
 	case PostgreSQL:
 		return postgresql.NewPostgresqlDatabase(ctx, config.PostgreSQL)

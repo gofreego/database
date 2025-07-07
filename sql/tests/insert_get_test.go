@@ -51,7 +51,7 @@ func TestInsertAndGet(t *testing.T) {
 	}
 	var executeGetTestFunc = func(t *testing.T, tt testCase) bool {
 
-		conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+		conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 		if (err != nil) != tt.wantErr {
 			t.Errorf("NewConnection() error = %v, wantErr %v", err, tt.wantErr)
 			return true
@@ -170,7 +170,7 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 				}
 			}()
 
-			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConnection() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -348,7 +348,7 @@ func TestInsertAndGet_EdgeCases(t *testing.T) {
 					return
 				}
 			}()
-			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if err != nil {
 				t.Fatalf("NewConnection() error = %v", err)
 				return
@@ -443,7 +443,7 @@ func TestMysqlDatabase_GetByFilter_Advanced(t *testing.T) {
 					return
 				}
 			}()
-			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if err != nil {
 				t.Fatalf("NewConnection() error = %v", err)
 				return

@@ -40,7 +40,7 @@ func TestInsertMany(t *testing.T) {
 				}
 			}()
 
-			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConnection() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -167,7 +167,7 @@ func TestInsertManyEmptyRecords(t *testing.T) {
 				}
 			}()
 
-			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConnection() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -233,7 +233,7 @@ func TestInsertManyLargeBatch(t *testing.T) {
 				}
 			}()
 
-			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConnection() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -323,7 +323,7 @@ func TestInsertManyWithOptions(t *testing.T) {
 				}
 			}()
 
-			conn, err := sqlfactory.NewSQLDatabase(tt.args.ctx, tt.args.config)
+			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConnection() error = %v, wantErr %v", err, tt.wantErr)
 				return
