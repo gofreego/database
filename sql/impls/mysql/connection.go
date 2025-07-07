@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gofreego/database/sql/impls/unimplemented"
 	"github.com/gofreego/database/sql/internal"
 )
 
@@ -21,7 +20,6 @@ type Config struct {
 type MysqlDatabase struct {
 	db                 *db.DB
 	preparedStatements internal.PreparedStatements
-	unimplemented.Unimplemented
 }
 
 func NewConnection(ctx context.Context, config *Config) (*db.DB, error) {

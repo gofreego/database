@@ -6,23 +6,30 @@ import (
 )
 
 type Database interface {
+	// Ping the database to check if the connection is alive
 	Ping(ctx context.Context) error
+	// Close the database connection and prepared statements
 	Close(ctx context.Context) error
+	// Insert a single record into the database
 	Insert(ctx context.Context, record Record, options ...Options) error
+	// Insert multiple records into the database
 	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
+	// Upsert a single record into the database
 	Upsert(ctx context.Context, record Record, options ...Options) (bool, error)
+	// Get a single record by id and scan the record values into the record
 	GetByID(ctx context.Context, record Record, options ...Options) error
+	// Get multiple records by filter and scan the records into the record
 	Get(ctx context.Context, filter *Filter, values []any, record Records, options ...Options) error
-	// This will update the record with the id of the record
+	// This will update the record with the id of the record and return if the record is updated
 	UpdateByID(ctx context.Context, record Record, options ...Options) (bool, error)
-	// This will update the record with condition
-	Update(ctx context.Context, updates *Updates, condition *Condition, values []any, options ...Options) (int64, error)
-	// This will soft delete the record with the id of the record
-	SoftDelete(ctx context.Context, id int64, options ...Options) (bool, error)
-	// This will delete the record with the id of the record
-	DeleteByID(ctx context.Context, id int64, options ...Options) (bool, error)
-	// This will delete the record with condition
-	Delete(ctx context.Context, condition *Condition, values []any, options ...Options) (int64, error)
+	// This will update the records with condition and return the number of rows affected
+	Update(ctx context.Context, table Table, updates *Updates, condition *Condition, values []any, options ...Options) (int64, error)
+	// This will soft delete the record with the id of the record and return if the record is soft deleted
+	SoftDelete(ctx context.Context, record Record, options ...Options) (bool, error)
+	// This will delete the record with the id of the record and return if the record is deleted
+	DeleteByID(ctx context.Context, record Record, options ...Options) (bool, error)
+	// This will delete the records with condition and return the number of rows affected
+	Delete(ctx context.Context, table Table, condition *Condition, values []any, options ...Options) (int64, error)
 }
 
 /*
