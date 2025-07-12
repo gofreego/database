@@ -12,12 +12,12 @@ import (
 // string :: condition string
 // []any :: values
 // error :: error if any
-func parseFilter(filter *sql.Filter) (string, []*sql.Value, error) {
+func parseFilter(filter *sql.Filter) (string, []int, error) {
 	if filter == nil {
 		return "", nil, nil
 	}
 	var filterStrings []string
-	var filterValues []*sql.Value
+	var filterValues []int
 	// condition
 	condition, values, err := parseCondition(filter.Condition)
 	if err != nil {
@@ -50,7 +50,7 @@ func parseFilter(filter *sql.Filter) (string, []*sql.Value, error) {
 			}
 		} else {
 			filterStrings = append(filterStrings, "LIMIT ?")
-			filterValues = append(filterValues, filter.Limit.WithType(sql.Int))
+			filterValues = append(filterValues, filter.Limit.Index)
 		}
 	}
 	// offset
@@ -63,7 +63,7 @@ func parseFilter(filter *sql.Filter) (string, []*sql.Value, error) {
 			}
 		} else {
 			filterStrings = append(filterStrings, "OFFSET ?")
-			filterValues = append(filterValues, filter.Offset.WithType(sql.Int))
+			filterValues = append(filterValues, filter.Offset.Index)
 		}
 	}
 

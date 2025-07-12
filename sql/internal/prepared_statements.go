@@ -1,11 +1,17 @@
 package internal
 
-import "database/sql"
+import (
+	"database/sql"
+	"slices"
+)
 
 // This will be used internally
 type PreparedStatement struct {
-	Statement   *sql.Stmt
-	NoOfRecords int
+	Statement *sql.Stmt
+	// This is getting used in case of batch insert, update, delete
+	NoOfRecords        int
+	valueIndexes       []int
+	noOfValuesRequired int
 }
 
 func NewPreparedStatement(s *sql.Stmt) *PreparedStatement {
@@ -23,6 +29,31 @@ func (s *PreparedStatement) GetStatement() *sql.Stmt {
 	return s.Statement
 }
 
+func (s *PreparedStatement) WithValueIndexes(valueIndexes []int) *PreparedStatement {
+	s.valueIndexes = valueIndexes
+	s.noOfValuesRequired = slices.Max(valueIndexes) + 1
+	return s
+}
+
+func (s *PreparedStatement) GetValueIndexes() []int {
+	return s.valueIndexes
+}
+
+func (s *PreparedStatement) GetNoOfValuesRequired() int {
+	return s.noOfValuesRequired
+}
+
+/*
+*
+*
+*
+*
+* Data structure for prepared statements
+*
+*
+*
+*
+ */
 type PreparedStatements map[string]*PreparedStatement
 
 func NewPreparedStatements() PreparedStatements {

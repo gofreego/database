@@ -40,7 +40,7 @@ returns
 string :: condition string
 []any :: values
 */
-func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
+func parseCondition(condition *sql.Condition) (string, []int, error) {
 	if condition == nil {
 		return "", nil, nil
 	}
@@ -61,7 +61,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 			// If the value is a fixed value, we use it directly
 			return fmt.Sprintf("%s %s %s", condition.Field, operatorToStringMap[condition.Operator], getValue(condition.Value.Value)), nil, nil
 		}
-		return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{condition.Value}, nil
+		return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []int{condition.Value.Index}, nil
 	case sql.IN, sql.NOTIN:
 		if condition.Value.Value != nil {
 			// check if value is a slice
@@ -76,7 +76,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 			}
 		} else {
 			if condition.Value.Count > 0 {
-				return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], getPlaceHolders(condition.Value.Count)), []*sql.Value{condition.Value.WithType(sql.Array)}, nil
+				return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], getPlaceHolders(condition.Value.Count)), []int{condition.Value.Index}, nil
 			} else {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value indexes for IN/NOTIN must be a non-empty slice, field: %s", condition.Field)
 			}
@@ -93,7 +93,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for LIKE/NOTLIKE must be a string, field: %s", condition.Field)
 			}
 		} else {
-			return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{condition.Value.WithType(sql.String)}, nil
+			return fmt.Sprintf("%s %s ?", condition.Field, operatorToStringMap[condition.Operator]), []int{condition.Value.Index}, nil
 		}
 	case sql.ISNULL, sql.ISNOTNULL:
 		return fmt.Sprintf("%s %s", condition.Field, operatorToStringMap[condition.Operator]), nil, nil
@@ -103,7 +103,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 		return "", nil, sql.NewInvalidQueryError("invalid condition, error: EXISTS and NOTEXISTS operators are not implemented in this parser")
 	case sql.AND, sql.OR:
 		var conditionStrings []string
-		var conditionValues []*sql.Value
+		var conditionValues []int
 		for _, subCondition := range condition.Conditions {
 			subConditionString, subConditionValues, err := parseCondition(&subCondition)
 			if err != nil {
@@ -143,7 +143,7 @@ func parseCondition(condition *sql.Condition) (string, []*sql.Value, error) {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for BETWEEN/NOTBETWEEN must be a slice of length 2, field: %s", condition.Field)
 			}
 		} else {
-			return fmt.Sprintf("(%s %s ? AND ?)", condition.Field, operatorToStringMap[condition.Operator]), []*sql.Value{condition.Value.WithType(sql.Array).WithCount(2)}, nil
+			return fmt.Sprintf("(%s %s ? AND ?)", condition.Field, operatorToStringMap[condition.Operator]), []int{condition.Value.Index}, nil
 		}
 	default:
 		return "", nil, sql.NewInvalidQueryError("invalid condition, error: invalid operator: %d, for field: %s", condition.Operator, condition.Field)

@@ -23,13 +23,13 @@ type Database interface {
 	// This will update the record with the id of the record and return if the record is updated
 	UpdateByID(ctx context.Context, record Record, options ...Options) (bool, error)
 	// This will update the records with condition and return the number of rows affected
-	Update(ctx context.Context, table Table, updates *Updates, condition *Condition, values []any, options ...Options) (int64, error)
+	Update(ctx context.Context, table *Table, updates *Updates, condition *Condition, values []any, options ...Options) (int64, error)
 	// This will soft delete the record with the id of the record and return if the record is soft deleted
 	SoftDelete(ctx context.Context, record Record, options ...Options) (bool, error)
 	// This will delete the record with the id of the record and return if the record is deleted
 	DeleteByID(ctx context.Context, record Record, options ...Options) (bool, error)
 	// This will delete the records with condition and return the number of rows affected
-	Delete(ctx context.Context, table Table, condition *Condition, values []any, options ...Options) (int64, error)
+	Delete(ctx context.Context, table *Table, condition *Condition, values []any, options ...Options) (int64, error)
 }
 
 /*
@@ -360,9 +360,6 @@ type ValueType int
 
 const (
 	Any ValueType = iota
-	String
-	Array
-	Int
 	Column
 )
 
@@ -430,6 +427,29 @@ func NewColumnValue(column string) *Value {
 		Type:  Column,
 		Value: column,
 	}
+}
+
+// Asssuming validation is already applied that valuesPassed has enough values
+func GetValues(indexs []int, values []any) []any {
+	if len(indexs) == 0 {
+		return nil
+	}
+	result := make([]any, 0)
+	for _, v := range indexs {
+		value := values[v]
+		// check if value is array type
+		if reflect.TypeOf(value).Kind() == reflect.Slice || reflect.TypeOf(value).Kind() == reflect.Array {
+			// if it is array type, append all the values to the result
+			sliceValue := reflect.ValueOf(value)
+			for i := 0; i < sliceValue.Len(); i++ {
+				result = append(result, sliceValue.Index(i).Interface())
+			}
+		} else {
+			// if it is not array type, append the value directly
+			result = append(result, value)
+		}
+	}
+	return result
 }
 
 /*

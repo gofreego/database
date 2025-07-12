@@ -16,7 +16,7 @@ func Test_parseFilter(t *testing.T) {
 		name    string
 		args    args
 		want    string
-		want1   []*sql.Value
+		want1   []int
 		wantErr bool
 	}{
 		{
@@ -40,7 +40,7 @@ func Test_parseFilter(t *testing.T) {
 				},
 			},
 			want:    "WHERE name = ?",
-			want1:   []*sql.Value{sql.NewIndexedValue(0)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -74,7 +74,7 @@ func Test_parseFilter(t *testing.T) {
 				},
 			},
 			want:    "WHERE (email = ? AND age > 30 AND name LIKE ?) GROUP BY (city, country) ORDER BY age ASC LIMIT 10 OFFSET ?",
-			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(2).WithType(sql.String), sql.NewIndexedValue(1).WithType(sql.Int)},
+			want1:   []int{0, 2, 1},
 			wantErr: false,
 		},
 		{

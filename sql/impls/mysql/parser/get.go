@@ -20,7 +20,7 @@ func ParseGetByIDQuery(record sql.Record) (string, error) {
 	return fmt.Sprintf(mysqlGetByIDQuery, strings.Join(record.Columns(), ", "), tableName), nil
 }
 
-func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []*sql.Value, error) {
+func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []int, error) {
 	filterString, values, err := parseFilter(filter)
 	if err != nil {
 		return "", nil, err

@@ -16,7 +16,7 @@ func Test_parseCondition(t *testing.T) {
 		name    string
 		args    args
 		want    string
-		want1   []*sql.Value
+		want1   []int
 		wantErr bool
 	}{
 		{
@@ -38,7 +38,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "name = ?",
-			want1:   []*sql.Value{sql.NewIndexedValue(0)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -51,7 +51,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "id IN (?, ?, ?)",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(3).WithType(sql.Array)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -77,7 +77,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "id NOT IN (?, ?, ?)",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(3).WithType(sql.Array)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -85,12 +85,12 @@ func Test_parseCondition(t *testing.T) {
 			args: args{
 				condition: &sql.Condition{
 					Field:    "name",
-					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Value:    sql.NewIndexedValue(0),
 					Operator: sql.LIKE,
 				},
 			},
 			want:    "name LIKE ?",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -98,12 +98,12 @@ func Test_parseCondition(t *testing.T) {
 			args: args{
 				condition: &sql.Condition{
 					Field:    "name",
-					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Value:    sql.NewIndexedValue(0),
 					Operator: sql.LIKE,
 				},
 			},
 			want:    "name LIKE ?",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -111,12 +111,12 @@ func Test_parseCondition(t *testing.T) {
 			args: args{
 				condition: &sql.Condition{
 					Field:    "name",
-					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Value:    sql.NewIndexedValue(0),
 					Operator: sql.NOTLIKE,
 				},
 			},
 			want:    "name NOT LIKE ?",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -184,12 +184,12 @@ func Test_parseCondition(t *testing.T) {
 			args: args{
 				condition: &sql.Condition{
 					Field:    "name",
-					Value:    sql.NewIndexedValue(0).WithType(sql.String),
+					Value:    sql.NewIndexedValue(0),
 					Operator: sql.REGEXP,
 				},
 			},
 			want:    "name REGEXP ?",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithType(sql.String)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -202,7 +202,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "(age BETWEEN ? AND ?)",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(2).WithType(sql.Array)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -215,7 +215,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "(age NOT BETWEEN ? AND ?)",
-			want1:   []*sql.Value{sql.NewIndexedValue(0).WithCount(2).WithType(sql.Array)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -238,7 +238,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "(name = ? AND age > ?)",
-			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(1)},
+			want1:   []int{0, 1},
 			wantErr: false,
 		},
 		{
@@ -261,7 +261,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "(name = ? OR age > ?)",
-			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(1)},
+			want1:   []int{0, 1},
 			wantErr: false,
 		},
 		{
@@ -279,7 +279,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "NOT (name = ?)",
-			want1:   []*sql.Value{sql.NewIndexedValue(0)},
+			want1:   []int{0},
 			wantErr: false,
 		},
 		{
@@ -658,7 +658,7 @@ func Test_parseCondition(t *testing.T) {
 				},
 			},
 			want:    "(status = ? AND (age > ? OR role = ?))",
-			want1:   []*sql.Value{sql.NewIndexedValue(0), sql.NewIndexedValue(1), sql.NewIndexedValue(2)},
+			want1:   []int{0, 1, 2},
 			wantErr: false,
 		},
 		{

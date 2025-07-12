@@ -12,7 +12,7 @@ import (
 func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
-	var conditionValues []*sql.Value
+	var conditionValues []int
 	var rows sql.Rows
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
@@ -29,17 +29,10 @@ func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []an
 			if err != nil {
 				return internal.HandleError(err)
 			}
-			stmt = internal.NewPreparedStatement(ps)
+			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(conditionValues)
 			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
-		// Convert sql.Value to actual values using the provided values slice
-		actualValues := make([]any, len(conditionValues))
-		for i, val := range conditionValues {
-			if val.Index < len(values) {
-				actualValues[i] = values[val.Index]
-			}
-		}
-		rows, err = stmt.GetStatement().QueryContext(ctx, actualValues...)
+		rows, err = stmt.GetStatement().QueryContext(ctx, sql.GetValues(stmt.GetValueIndexes(), values)...)
 		if err != nil {
 			return internal.HandleError(err)
 		}
@@ -50,14 +43,7 @@ func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []an
 			return internal.HandleError(err)
 		}
 		logger.Debug(ctx, "GetByFilter query: %s", query)
-		// Convert sql.Value to actual values using the provided values slice
-		actualValues := make([]any, len(conditionValues))
-		for i, val := range conditionValues {
-			if val.Index < len(values) {
-				actualValues[i] = values[val.Index]
-			}
-		}
-		rows, err = c.db.QueryContext(ctx, query, actualValues...)
+		rows, err = c.db.QueryContext(ctx, query, sql.GetValues(conditionValues, values)...)
 		if err != nil {
 			return internal.HandleError(err)
 		}
