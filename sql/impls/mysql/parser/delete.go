@@ -24,9 +24,6 @@ func ParseDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int
 	if err != nil {
 		return "", nil, err
 	}
-	if condition == nil {
-		return fmt.Sprintf(deleteQuery, tableName, "1"), nil, nil // No condition, delete all records
-	}
 	conditionStr, values, err := parseCondition(condition)
 	if err != nil {
 		return "", nil, err

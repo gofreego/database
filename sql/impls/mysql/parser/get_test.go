@@ -171,7 +171,7 @@ func TestParseGetByFilterQuery(t *testing.T) {
 				},
 				records: &records.Users{},
 			},
-			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users GROUP BY (city, country) ORDER BY age ASC LIMIT 10 OFFSET ?",
+			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE 1 GROUP BY (city, country) ORDER BY age ASC LIMIT 10 OFFSET ?",
 			want1:   []int{1},
 			wantErr: false,
 		},

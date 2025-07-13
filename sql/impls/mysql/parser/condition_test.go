@@ -24,7 +24,7 @@ func Test_parseCondition(t *testing.T) {
 			args: args{
 				condition: nil,
 			},
-			want:    "",
+			want:    "1",
 			want1:   nil,
 			wantErr: false,
 		},

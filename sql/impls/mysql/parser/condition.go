@@ -42,7 +42,8 @@ string :: condition string
 */
 func parseCondition(condition *sql.Condition) (string, []int, error) {
 	if condition == nil {
-		return "", nil, nil
+		// if condition is nil, return a condition that always returns true
+		return "1", nil, nil
 	}
 	// Validate the condition
 	if err := condition.Validate(); err != nil {

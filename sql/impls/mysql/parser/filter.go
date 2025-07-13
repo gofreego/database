@@ -23,10 +23,9 @@ func parseFilter(filter *sql.Filter) (string, []int, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	if condition != "" {
-		filterStrings = append(filterStrings, fmt.Sprintf("WHERE %s", condition))
-		filterValues = append(filterValues, values...)
-	}
+	filterStrings = append(filterStrings, fmt.Sprintf("WHERE %s", condition))
+	filterValues = append(filterValues, values...)
+
 	// group by
 	groupBy := parseGroupBy(filter.GroupBy)
 	if groupBy != "" {
