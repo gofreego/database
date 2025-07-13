@@ -9,7 +9,7 @@ import (
 type PreparedStatement struct {
 	Statement *sql.Stmt
 	// This is getting used in case of batch insert, update, delete
-	NoOfRecords        int
+	noOfRecords        int
 	valueIndexes       []int
 	noOfValuesRequired int
 }
@@ -20,9 +20,13 @@ func NewPreparedStatement(s *sql.Stmt) *PreparedStatement {
 	}
 }
 
-func (s *PreparedStatement) Records(n int) *PreparedStatement {
-	s.NoOfRecords = n
+func (s *PreparedStatement) WithRecords(n int) *PreparedStatement {
+	s.noOfRecords = n
 	return s
+}
+
+func (s *PreparedStatement) GetNoOfRecords() int {
+	return s.noOfRecords
 }
 
 func (s *PreparedStatement) GetStatement() *sql.Stmt {

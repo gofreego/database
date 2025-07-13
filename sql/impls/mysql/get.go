@@ -12,7 +12,7 @@ import (
 func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
-	var conditionValues []int
+	var filterIndexes []int
 	var rows sql.Rows
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
@@ -20,7 +20,7 @@ func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []an
 
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
 			var query string
-			query, conditionValues, err = parser.ParseGetByFilterQuery(filter, records)
+			query, filterIndexes, err = parser.ParseGetByFilterQuery(filter, records)
 			if err != nil {
 				return internal.HandleError(err)
 			}
@@ -29,7 +29,7 @@ func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []an
 			if err != nil {
 				return internal.HandleError(err)
 			}
-			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(conditionValues)
+			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(filterIndexes)
 			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
 		rows, err = stmt.GetStatement().QueryContext(ctx, sql.GetValues(stmt.GetValueIndexes(), values)...)
@@ -38,12 +38,12 @@ func (c *MysqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []an
 		}
 	} else {
 		var query string
-		query, conditionValues, err = parser.ParseGetByFilterQuery(filter, records)
+		query, filterIndexes, err = parser.ParseGetByFilterQuery(filter, records)
 		if err != nil {
 			return internal.HandleError(err)
 		}
 		logger.Debug(ctx, "GetByFilter query: %s", query)
-		rows, err = c.db.QueryContext(ctx, query, sql.GetValues(conditionValues, values)...)
+		rows, err = c.db.QueryContext(ctx, query, sql.GetValues(filterIndexes, values)...)
 		if err != nil {
 			return internal.HandleError(err)
 		}
