@@ -25,7 +25,7 @@ func ParseUpsertQuery(record sql.Record) (string, []any, error) {
 		return "", nil, errors.New("no values provided for upsert")
 	}
 
-	updates := parseUpdates(record)
+	updates := parseUpsertUpdates(record)
 	if updates == "" {
 		return "", nil, errors.New("no columns to update")
 	}
@@ -33,7 +33,7 @@ func ParseUpsertQuery(record sql.Record) (string, []any, error) {
 	return fmt.Sprintf(upsertQuery, tableName, parseColumns(record), placeholders, updates), values, nil
 }
 
-func parseUpdates(record sql.Record) string {
+func parseUpsertUpdates(record sql.Record) string {
 	updates := []string{}
 	idColumn := record.IdColumn()
 	for _, col := range record.Columns() {

@@ -307,8 +307,8 @@ type Filter struct {
  */
 
 type UpdateField struct {
-	Field      string
-	ValueIndex int
+	Field string
+	Value *Value
 }
 
 type Updates struct {
@@ -321,8 +321,8 @@ func NewUpdates() *Updates {
 	}
 }
 
-func (u *Updates) Add(field string, valueIndex int) *Updates {
-	u.Fields = append(u.Fields, UpdateField{Field: field, ValueIndex: valueIndex})
+func (u *Updates) Add(field string, value *Value) *Updates {
+	u.Fields = append(u.Fields, UpdateField{Field: field, Value: value})
 	return u
 }
 
