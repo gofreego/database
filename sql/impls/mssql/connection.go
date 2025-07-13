@@ -2,7 +2,7 @@ package mssql
 
 import (
 	"context"
-	db "database/sql"
+	driver "database/sql"
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb"
@@ -18,12 +18,12 @@ type Config struct {
 }
 
 type MssqlDatabase struct {
-	db *db.DB
+	db *driver.DB
 	unimplemented.Unimplemented
 }
 
-func NewConnection(ctx context.Context, config *Config) (*db.DB, error) {
-	db, err := db.Open("mssql", fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s", config.Host, config.Port, config.User, config.Password, config.Database))
+func NewConnection(ctx context.Context, config *Config) (*driver.DB, error) {
+	db, err := driver.Open("mssql", fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s", config.Host, config.Port, config.User, config.Password, config.Database))
 	if err != nil {
 		return nil, err
 	}

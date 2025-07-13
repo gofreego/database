@@ -2,7 +2,7 @@ package mysql
 
 import (
 	"context"
-	db "database/sql"
+	driver "database/sql"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -18,12 +18,12 @@ type Config struct {
 }
 
 type MysqlDatabase struct {
-	db                 *db.DB
+	db                 *driver.DB
 	preparedStatements internal.PreparedStatements
 }
 
-func NewConnection(ctx context.Context, config *Config) (*db.DB, error) {
-	db, err := db.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", config.User, config.Password, config.Host, config.Port, config.Database))
+func NewConnection(ctx context.Context, config *Config) (*driver.DB, error) {
+	db, err := driver.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?multiStatements=true", config.User, config.Password, config.Host, config.Port, config.Database))
 	if err != nil {
 		return nil, err
 	}

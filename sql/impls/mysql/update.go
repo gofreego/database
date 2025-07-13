@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	db "database/sql"
 	driver "database/sql"
 	"fmt"
 
@@ -24,7 +23,7 @@ func (c *MysqlDatabase) UpdateByID(ctx context.Context, record sql.Record, optio
 	values := record.Values()
 	values = append(values, record.ID())
 
-	var res db.Result
+	var res driver.Result
 	var err error
 	var query string
 	if opt.PreparedName != "" {
