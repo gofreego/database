@@ -54,6 +54,10 @@ func (u *Unimplemented) Delete(ctx context.Context, table *sql.Table, condition 
 	return 0, errors.New("DeleteByCondition method is not implemented")
 }
 
-func (u *Unimplemented) SoftDelete(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
+func (u *Unimplemented) SoftDeleteByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
 	return false, errors.New("SoftDeleteByID method is not implemented")
+}
+
+func (u *Unimplemented) SoftDelete(ctx context.Context, table *sql.Table, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
+	return 0, errors.New("SoftDelete method is not implemented")
 }

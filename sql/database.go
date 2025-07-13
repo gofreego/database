@@ -25,7 +25,9 @@ type Database interface {
 	// This will update the records with condition and return the number of rows affected
 	Update(ctx context.Context, table *Table, updates *Updates, condition *Condition, values []any, options ...Options) (int64, error)
 	// This will soft delete the record with the id of the record and return if the record is soft deleted
-	SoftDelete(ctx context.Context, record Record, options ...Options) (bool, error)
+	// This will update the deleted field to 1, table must have a deleted field
+	SoftDeleteByID(ctx context.Context, record Record, options ...Options) (bool, error)
+	SoftDelete(ctx context.Context, table *Table, condition *Condition, values []any, options ...Options) (int64, error)
 	// This will delete the record with the id of the record and return if the record is deleted
 	DeleteByID(ctx context.Context, record Record, options ...Options) (bool, error)
 	// This will delete the records with condition and return the number of rows affected

@@ -10,6 +10,54 @@ import (
 	"github.com/gofreego/goutils/logger"
 )
 
+// DeleteByID implements sql.Database.
+func (c *MysqlDatabase) DeleteByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
+	opt := sql.GetOptions(options...)
+	var err error
+	var result driver.Result
+	var query string
+	// if prepared name is not empty, use prepared statement
+	if opt.PreparedName != "" {
+		var stmt *internal.PreparedStatement
+		var ok bool
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+			query, err = parser.ParseDeleteByIDQuery(record)
+			if err != nil {
+				return false, internal.HandleError(err)
+			}
+			logger.Debug(ctx, "DeleteByID query: %s", query)
+			ps, err := c.db.PrepareContext(ctx, query)
+			if err != nil {
+				return false, internal.HandleError(err)
+			}
+			stmt = internal.NewPreparedStatement(ps)
+			c.preparedStatements.Add(opt.PreparedName, stmt)
+		}
+		// execute the prepared statement
+		result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
+	} else {
+		// if prepared name is empty, parse the query and execute the query
+		query, err = parser.ParseDeleteByIDQuery(record)
+		if err != nil {
+			return false, internal.HandleError(err)
+		}
+		logger.Debug(ctx, "DeleteByID query: %s", query)
+		result, err = c.db.ExecContext(ctx, query, record.ID())
+	}
+	// if there is an error, return false and the error
+	if err != nil {
+		return false, internal.HandleError(err)
+	}
+	// get the number of rows affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, internal.HandleError(err)
+	}
+	// if the number of rows affected is greater than 0, return true, otherwise return false
+	return rowsAffected > 0, nil
+}
+
 // Delete implements sql.Database.
 func (c *MysqlDatabase) Delete(ctx context.Context, table *sql.Table, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
 	opt := sql.GetOptions(options...)
@@ -40,6 +88,88 @@ func (c *MysqlDatabase) Delete(ctx context.Context, table *sql.Table, condition 
 			return 0, internal.HandleError(err)
 		}
 		logger.Debug(ctx, "Delete query: %s", query)
+		result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+	}
+	if err != nil {
+		return 0, internal.HandleError(err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, internal.HandleError(err)
+	}
+	return rowsAffected, nil
+}
+
+func (c *MysqlDatabase) SoftDeleteByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
+	opt := sql.GetOptions(options...)
+	var err error
+	var result driver.Result
+	var query string
+	var valueIndexes []int
+	if opt.PreparedName != "" {
+		var stmt *internal.PreparedStatement
+		var ok bool
+		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+			query, err = parser.ParseSoftDeleteByIDQuery(record.Table(), record)
+			if err != nil {
+				return false, internal.HandleError(err)
+			}
+			logger.Debug(ctx, "Soft delete by id query: %s", query)
+			ps, err := c.db.PrepareContext(ctx, query)
+			if err != nil {
+				return false, internal.HandleError(err)
+			}
+			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes)
+			c.preparedStatements.Add(opt.PreparedName, stmt)
+		}
+		result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
+	} else {
+		query, err = parser.ParseSoftDeleteByIDQuery(record.Table(), record)
+		if err != nil {
+			return false, internal.HandleError(err)
+		}
+		logger.Debug(ctx, "Soft delete by id query: %s", query)
+		result, err = c.db.ExecContext(ctx, query, record.ID())
+	}
+	if err != nil {
+		return false, internal.HandleError(err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, internal.HandleError(err)
+	}
+	return rowsAffected > 0, nil
+}
+
+func (c *MysqlDatabase) SoftDelete(ctx context.Context, table *sql.Table, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
+	opt := sql.GetOptions(options...)
+	var err error
+	var result driver.Result
+	var query string
+	var valueIndexes []int
+	if opt.PreparedName != "" {
+		var stmt *internal.PreparedStatement
+		var ok bool
+		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+			query, valueIndexes, err = parser.ParseSoftDeleteQuery(table, condition)
+			if err != nil {
+				return 0, internal.HandleError(err)
+			}
+			logger.Debug(ctx, "Soft delete query: %s", query)
+			ps, err := c.db.PrepareContext(ctx, query)
+			if err != nil {
+				return 0, internal.HandleError(err)
+			}
+			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes)
+			c.preparedStatements.Add(opt.PreparedName, stmt)
+		}
+		result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
+	} else {
+		query, valueIndexes, err = parser.ParseSoftDeleteQuery(table, condition)
+		if err != nil {
+			return 0, internal.HandleError(err)
+		}
+		logger.Debug(ctx, "Soft delete query: %s", query)
 		result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
 	}
 	if err != nil {

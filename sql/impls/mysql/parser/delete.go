@@ -7,8 +7,10 @@ import (
 )
 
 const (
-	deleteByIDQuery = "DELETE FROM %s WHERE %s = ?"
-	deleteQuery     = "DELETE FROM %s WHERE %s"
+	deleteByIDQuery     = "DELETE FROM %s WHERE %s = ?"
+	deleteQuery         = "DELETE FROM %s WHERE %s"
+	softDeleteByIDQuery = "UPDATE %s SET deleted = 1 WHERE %s = ?"
+	softDeleteQuery     = "UPDATE %s SET deleted = 1 WHERE %s"
 )
 
 func ParseDeleteByIDQuery(record sql.Record) (string, error) {
@@ -29,4 +31,24 @@ func ParseDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int
 		return "", nil, err
 	}
 	return fmt.Sprintf(deleteQuery, tableName, conditionStr), values, nil
+}
+
+func ParseSoftDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int, error) {
+	tableName, err := parseTableName(table)
+	if err != nil {
+		return "", nil, err
+	}
+	conditionStr, values, err := parseCondition(condition)
+	if err != nil {
+		return "", nil, err
+	}
+	return fmt.Sprintf(softDeleteQuery, tableName, conditionStr), values, nil
+}
+
+func ParseSoftDeleteByIDQuery(table *sql.Table, record sql.Record) (string, error) {
+	tableName, err := parseTableName(table)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(softDeleteByIDQuery, tableName, record.IdColumn()), nil
 }
