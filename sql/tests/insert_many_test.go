@@ -27,6 +27,15 @@ func TestInsertMany(t *testing.T) {
 			wantErr: false,
 			pingErr: false,
 		},
+		{
+			name: "postgresql insert many users",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -154,6 +163,15 @@ func TestInsertManyEmptyRecords(t *testing.T) {
 			wantErr: false,
 			pingErr: false,
 		},
+		{
+			name: "postgresql insert many empty records",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -216,6 +234,15 @@ func TestInsertManyLargeBatch(t *testing.T) {
 			args: args{
 				ctx:    context.Background(),
 				config: &mysqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
+		{
+			name: "postgresql insert many large batch",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
 			},
 			wantErr: false,
 			pingErr: false,
@@ -306,6 +333,15 @@ func TestInsertManyWithOptions(t *testing.T) {
 			args: args{
 				ctx:    context.Background(),
 				config: &mysqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
+		{
+			name: "postgresql insert many with options",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
 			},
 			wantErr: false,
 			pingErr: false,

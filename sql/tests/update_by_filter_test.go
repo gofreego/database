@@ -19,6 +19,10 @@ func TestMysqlDatabase_UpdateByFilter(t *testing.T) {
 			name: "mysql update by filter",
 			cfg:  &mysqlConfig,
 		},
+		{
+			name: "postgresql update by filter",
+			cfg:  &postgresqlConfig,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

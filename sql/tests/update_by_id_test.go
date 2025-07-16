@@ -18,6 +18,10 @@ func TestMysqlDatabase_UpdateByID(t *testing.T) {
 			name: "mysql update by id",
 			cfg:  &mysqlConfig,
 		},
+		{
+			name: "postgresql update by id",
+			cfg:  &postgresqlConfig,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

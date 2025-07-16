@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gofreego/database/sql/impls/unimplemented"
+	"github.com/gofreego/database/sql/internal"
 	_ "github.com/lib/pq"
 )
 
@@ -18,7 +19,8 @@ type Config struct {
 }
 
 type PostgresqlDatabase struct {
-	db *sql.DB
+	db                 *sql.DB
+	preparedStatements internal.PreparedStatements
 	unimplemented.Unimplemented
 }
 
@@ -35,7 +37,10 @@ func NewPostgresqlDatabase(ctx context.Context, config *Config) (*PostgresqlData
 	if err != nil {
 		return nil, err
 	}
-	return &PostgresqlDatabase{db: db}, nil
+	return &PostgresqlDatabase{
+		db:                 db,
+		preparedStatements: internal.NewPreparedStatements(),
+	}, nil
 }
 
 func (c *PostgresqlDatabase) Ping(ctx context.Context) error {
@@ -43,5 +48,6 @@ func (c *PostgresqlDatabase) Ping(ctx context.Context) error {
 }
 
 func (c *PostgresqlDatabase) Close(ctx context.Context) error {
+	c.preparedStatements.Close()
 	return c.db.Close()
 }

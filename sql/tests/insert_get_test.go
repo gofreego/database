@@ -30,15 +30,15 @@ type testCase struct {
 func TestInsertAndGet(t *testing.T) {
 
 	tests := []testCase{
-		// {
-		// 	name: "postgresql insert and get",
-		// 	args: args{
-		// 		ctx:    context.Background(),
-		// 		config: &postgresqlConfig,
-		// 	},
-		// 	wantErr: false,
-		// 	pingErr: false,
-		// },
+		{
+			name: "postgresql insert and get",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
 		{
 			name: "mysql insert and get",
 			args: args{
@@ -153,6 +153,15 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 			args: args{
 				ctx:    context.Background(),
 				config: &mysqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
+		{
+			name: "postgresql get by filter",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
 			},
 			wantErr: false,
 			pingErr: false,
@@ -335,6 +344,15 @@ func TestInsertAndGet_EdgeCases(t *testing.T) {
 			wantErr: false,
 			pingErr: false,
 		},
+		{
+			name: "postgresql insert and get edge cases",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -426,6 +444,15 @@ func TestMysqlDatabase_GetByFilter_Advanced(t *testing.T) {
 			args: args{
 				ctx:    context.Background(),
 				config: &mysqlConfig,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
+		{
+			name: "postgresql get by filter advanced",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
 			},
 			wantErr: false,
 			pingErr: false,
