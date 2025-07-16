@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -26,7 +25,7 @@ var (
 		sql.ISNOTNULL:  "IS NOT NULL",
 		sql.EXISTS:     "EXISTS",
 		sql.NOTEXISTS:  "NOT EXISTS",
-		sql.REGEXP:     "~",
+		sql.REGEXP:     "REGEXP",
 		sql.BETWEEN:    "BETWEEN",
 		sql.NOTBETWEEN: "NOT BETWEEN",
 		sql.AND:        "AND",
@@ -36,15 +35,15 @@ var (
 )
 
 /*
-parseCondition parses the condition and returns the query string and the value indexes
+parseCondition parses the condition and returns the query string and the values
 returns
 string :: condition string
-[]int :: value indexes for PostgreSQL placeholders
+[]any :: values
 */
-func parseCondition(condition *sql.Condition) (string, []int, error) {
+func parseCondition(condition *sql.Condition, lastIndex *int) (string, []int, error) {
 	if condition == nil {
 		// if condition is nil, return a condition that always returns true
-		return "TRUE", nil, nil
+		return "1=1", nil, nil
 	}
 	// Validate the condition
 	if err := condition.Validate(); err != nil {
@@ -63,7 +62,8 @@ func parseCondition(condition *sql.Condition) (string, []int, error) {
 			// If the value is a fixed value, we use it directly
 			return fmt.Sprintf("%s %s %s", condition.Field, operatorToStringMap[condition.Operator], getValue(condition.Value.Value)), nil, nil
 		}
-		return fmt.Sprintf("%s %s $%d", condition.Field, operatorToStringMap[condition.Operator], condition.Value.Index+1), []int{condition.Value.Index}, nil
+		*lastIndex++
+		return fmt.Sprintf("%s %s $%d", condition.Field, operatorToStringMap[condition.Operator], *lastIndex), []int{condition.Value.Index}, nil
 	case sql.IN, sql.NOTIN:
 		if condition.Value.Value != nil {
 			// check if value is a slice
@@ -78,11 +78,7 @@ func parseCondition(condition *sql.Condition) (string, []int, error) {
 			}
 		} else {
 			if condition.Value.Count > 0 {
-				placeholders := make([]string, condition.Value.Count)
-				for i := 0; i < condition.Value.Count; i++ {
-					placeholders[i] = "$" + strconv.Itoa(condition.Value.Index+i+1)
-				}
-				return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], strings.Join(placeholders, ", ")), []int{condition.Value.Index}, nil
+				return fmt.Sprintf("%s %s (%s)", condition.Field, operatorToStringMap[condition.Operator], getPlaceHolders(condition.Value.Count, lastIndex)), []int{condition.Value.Index}, nil
 			} else {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value indexes for IN/NOTIN must be a non-empty slice, field: %s", condition.Field)
 			}
@@ -99,7 +95,8 @@ func parseCondition(condition *sql.Condition) (string, []int, error) {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for LIKE/NOTLIKE must be a string, field: %s", condition.Field)
 			}
 		} else {
-			return fmt.Sprintf("%s %s $%d", condition.Field, operatorToStringMap[condition.Operator], condition.Value.Index+1), []int{condition.Value.Index}, nil
+			*lastIndex++
+			return fmt.Sprintf("%s %s $%d", condition.Field, operatorToStringMap[condition.Operator], *lastIndex), []int{condition.Value.Index}, nil
 		}
 	case sql.ISNULL, sql.ISNOTNULL:
 		return fmt.Sprintf("%s %s", condition.Field, operatorToStringMap[condition.Operator]), nil, nil
@@ -111,7 +108,7 @@ func parseCondition(condition *sql.Condition) (string, []int, error) {
 		var conditionStrings []string
 		var conditionValues []int
 		for _, subCondition := range condition.Conditions {
-			subConditionString, subConditionValues, err := parseCondition(&subCondition)
+			subConditionString, subConditionValues, err := parseCondition(&subCondition, lastIndex)
 			if err != nil {
 				return "", nil, sql.NewInvalidQueryError("invalid sub-condition for operator: %s, error: %s", condition.Operator.String(), err.Error())
 			}
@@ -128,7 +125,7 @@ func parseCondition(condition *sql.Condition) (string, []int, error) {
 		if len(condition.Conditions) != 1 {
 			return "", nil, sql.NewInvalidQueryError("invalid condition, error: NOT operator should have exactly one sub-condition")
 		}
-		subConditionString, subConditionValues, err := parseCondition(&condition.Conditions[0])
+		subConditionString, subConditionValues, err := parseCondition(&condition.Conditions[0], lastIndex)
 		if err != nil {
 			return "", nil, sql.NewInvalidQueryError("invalid sub-condition for NOT operator: %s", err.Error())
 		}
@@ -149,7 +146,9 @@ func parseCondition(condition *sql.Condition) (string, []int, error) {
 				return "", nil, sql.NewInvalidQueryError("invalid condition, error: value for BETWEEN/NOTBETWEEN must be a slice of length 2, field: %s", condition.Field)
 			}
 		} else {
-			return fmt.Sprintf("(%s %s $%d AND $%d)", condition.Field, operatorToStringMap[condition.Operator], condition.Value.Index+1, condition.Value.Index+2), []int{condition.Value.Index}, nil
+			*lastIndex++
+			*lastIndex++
+			return fmt.Sprintf("(%s %s $%d AND $%d)", condition.Field, operatorToStringMap[condition.Operator], *lastIndex-1, *lastIndex), []int{condition.Value.Index}, nil
 		}
 	default:
 		return "", nil, sql.NewInvalidQueryError("invalid condition, error: invalid operator: %d, for field: %s", condition.Operator, condition.Field)

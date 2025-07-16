@@ -6,7 +6,7 @@ import (
 	"github.com/gofreego/database/sql"
 )
 
-// postgresql syntax
+// mysql syntax
 var (
 	joinTypes = map[sql.JoinType]string{
 		sql.InnerJoin: "INNER JOIN",
@@ -15,11 +15,11 @@ var (
 	}
 )
 
-func parseTableName(table *sql.Table) (string, error) {
+func parseTableName(table *sql.Table, lastIndex *int) (string, error) {
 	if table == nil {
 		return "", sql.NewInvalidQueryError("invalid table: table cannot be nil")
 	}
-	joinString, err := parseJoin(table.Join)
+	joinString, err := parseJoin(table.Join, lastIndex)
 	if err != nil {
 		return "", nil
 	}
@@ -33,17 +33,17 @@ func getAlias(alias string) string {
 	return " " + alias
 }
 
-func parseJoin(join []sql.Join) (string, error) {
+func parseJoin(join []sql.Join, lastIndex *int) (string, error) {
 	if len(join) == 0 {
 		return "", nil
 	}
 	joins := ""
 	for _, j := range join {
-		conditionString, _, err := parseCondition(j.On)
+		conditionString, _, err := parseCondition(j.On, lastIndex)
 		if err != nil {
 			return "", err
 		}
-		tableName, err := parseTableName(j.Table)
+		tableName, err := parseTableName(j.Table, lastIndex)
 		if err != nil {
 			return "", err
 		}

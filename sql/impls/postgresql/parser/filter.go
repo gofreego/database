@@ -10,16 +10,16 @@ import (
 // parseFilter parses the filter and returns the query string and the values
 // returns
 // string :: condition string
-// []int :: value indexes for PostgreSQL placeholders
+// []any :: values
 // error :: error if any
-func parseFilter(filter *sql.Filter) (string, []int, error) {
+func parseFilter(filter *sql.Filter, lastIndex *int) (string, []int, error) {
 	if filter == nil {
 		return "", nil, nil
 	}
 	var filterStrings []string
 	var filterValues []int
 	// condition
-	condition, values, err := parseCondition(filter.Condition)
+	condition, values, err := parseCondition(filter.Condition, lastIndex)
 	if err != nil {
 		return "", nil, err
 	}
@@ -48,7 +48,8 @@ func parseFilter(filter *sql.Filter) (string, []int, error) {
 				return "", nil, fmt.Errorf("invalid limit value: %v, expected int/int64 and greater than zero", filter.Limit.Value)
 			}
 		} else {
-			filterStrings = append(filterStrings, fmt.Sprintf("LIMIT $%d", filter.Limit.Index+1))
+			*lastIndex++
+			filterStrings = append(filterStrings, fmt.Sprintf("LIMIT $%d", *lastIndex))
 			filterValues = append(filterValues, filter.Limit.Index)
 		}
 	}
@@ -61,7 +62,8 @@ func parseFilter(filter *sql.Filter) (string, []int, error) {
 				return "", nil, fmt.Errorf("invalid offset value: %v, expected int/int64 and greater than or equal to zero", filter.Offset.Value)
 			}
 		} else {
-			filterStrings = append(filterStrings, fmt.Sprintf("OFFSET $%d", filter.Offset.Index+1))
+			*lastIndex++
+			filterStrings = append(filterStrings, fmt.Sprintf("OFFSET $%d", *lastIndex))
 			filterValues = append(filterValues, filter.Offset.Index)
 		}
 	}

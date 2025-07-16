@@ -13,7 +13,8 @@ const (
 )
 
 func ParseGetByIDQuery(record sql.Record) (string, error) {
-	tableName, err := parseTableName(record.Table())
+	var lastIndex int
+	tableName, err := parseTableName(record.Table(), &lastIndex)
 	if err != nil {
 		return "", err
 	}
@@ -21,14 +22,16 @@ func ParseGetByIDQuery(record sql.Record) (string, error) {
 }
 
 func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []int, error) {
-	filterString, values, err := parseFilter(filter)
+	var lastIndex int
+	tableName, err := parseTableName(records.Table(), &lastIndex)
 	if err != nil {
 		return "", nil, err
 	}
-	tableName, err := parseTableName(records.Table())
+	filterString, values, err := parseFilter(filter, &lastIndex)
 	if err != nil {
 		return "", nil, err
 	}
+
 	query := fmt.Sprintf(postgresqlGetQuery, strings.Join(records.Columns(), ", "), tableName)
 	if filterString != "" {
 		query += " " + filterString
