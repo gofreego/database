@@ -41,6 +41,13 @@ func TestNewConnection(t *testing.T) {
 			wantErr: false,
 			pingErr: false,
 		},
+		{
+			name: "Ping MSSQL",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

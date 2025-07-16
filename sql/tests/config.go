@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"github.com/gofreego/database/sql/impls/mssql"
 	"github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
 	"github.com/gofreego/database/sql/sqlfactory"
@@ -26,6 +27,17 @@ var (
 			User:     "root",
 			Password: "root@1234",
 			Database: "postgres",
+		},
+	}
+
+	mssqlConfig = sqlfactory.Config{
+		Name: sqlfactory.MSSQL,
+		MSSQL: &mssql.Config{
+			Host:     "localhost",
+			Port:     1433,
+			User:     "sa",
+			Password: "root@1234",
+			Database: "master",
 		},
 	}
 )
