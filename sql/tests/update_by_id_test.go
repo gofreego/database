@@ -22,6 +22,10 @@ func TestMysqlDatabase_UpdateByID(t *testing.T) {
 			name: "postgresql update by id",
 			cfg:  &postgresqlConfig,
 		},
+		{
+			name: "mssql update by id",
+			cfg:  &mssqlConfig,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

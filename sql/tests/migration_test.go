@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gofreego/database/sql"
+	"github.com/gofreego/database/sql/impls/mssql"
 	"github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
 	"github.com/gofreego/database/sql/migrator"
@@ -28,13 +29,23 @@ func CleanDirtyState(ctx context.Context, cfg *sqlfactory.Config) error {
 		if err != nil {
 			return err
 		}
+	case sqlfactory.MSSQL:
+		conn, err = mssql.NewConnection(ctx, cfg.MSSQL)
+		if err != nil {
+			return err
+		}
 	default:
 		return sql.ErrInvalidConfig
 	}
 	defer conn.Close()
 
-	// Clean up dirty state by setting dirty = false
-	_, err = conn.ExecContext(ctx, "UPDATE schema_migrations SET dirty = false WHERE dirty = true")
+	var cleanSQL string
+	if cfg.Name == sqlfactory.MSSQL {
+		cleanSQL = "UPDATE schema_migrations SET dirty = 0 WHERE dirty = 1"
+	} else {
+		cleanSQL = "UPDATE schema_migrations SET dirty = false WHERE dirty = true"
+	}
+	_, err = conn.ExecContext(ctx, cleanSQL)
 	return err
 }
 
@@ -46,8 +57,11 @@ func MigrationUP(ctx context.Context, cfg *sqlfactory.Config) error {
 	}
 
 	filesPath := "./migrations/mysql"
-	if cfg.Name == sqlfactory.PostgreSQL {
+	switch cfg.Name {
+	case sqlfactory.PostgreSQL:
 		filesPath = "./migrations/postgresql"
+	case sqlfactory.MSSQL:
+		filesPath = "./migrations/mssql"
 	}
 
 	migrator := migrator.NewMigrator(ctx, &migrator.Config{
@@ -60,8 +74,11 @@ func MigrationUP(ctx context.Context, cfg *sqlfactory.Config) error {
 
 func MigrationDown(ctx context.Context, cfg *sqlfactory.Config) error {
 	filesPath := "./migrations/mysql"
-	if cfg.Name == sqlfactory.PostgreSQL {
+	switch cfg.Name {
+	case sqlfactory.PostgreSQL:
 		filesPath = "./migrations/postgresql"
+	case sqlfactory.MSSQL:
+		filesPath = "./migrations/mssql"
 	}
 
 	migrator := migrator.NewMigrator(ctx, &migrator.Config{
@@ -123,6 +140,24 @@ func TestMigration(t *testing.T) {
 			},
 			wantErr: false,
 			pingErr: false,
+		},
+		{
+			name: "mssql up",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+				action: migrator.ACTION_UP,
+			},
+			wantErr: false,
+			pingErr: false,
+		},
+		{
+			name: "mssql down",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+				action: migrator.ACTION_DOWN,
+			},
 		},
 	}
 	for _, tt := range tests {

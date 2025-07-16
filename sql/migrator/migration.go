@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/gofreego/database/sql/impls/mssql"
 	internalmysql "github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
 	"github.com/gofreego/database/sql/sqlfactory"
@@ -13,6 +14,7 @@ import (
 	migrationdatabase "github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/database/sqlserver"
 	"github.com/golang-migrate/migrate/v4/source/file"
 )
 
@@ -51,7 +53,14 @@ func (app *Migrator) Run(ctx context.Context) error {
 		return err
 	}
 	if app.conf.Action == ACTION_DOWN {
-		result, err := conn.Exec("update schema_migrations  set dirty  = false where dirty = true;")
+		var cleanSQL string
+		switch app.conf.Database.Name {
+		case sqlfactory.MSSQL:
+			cleanSQL = "UPDATE schema_migrations SET dirty = 0 WHERE dirty = 1"
+		default:
+			cleanSQL = "UPDATE schema_migrations SET dirty = false WHERE dirty = true"
+		}
+		result, err := conn.Exec(cleanSQL)
 		if err != nil {
 			logger.Error(ctx, "failed to set dirty false, Err: %s", err.Error())
 		}
@@ -129,6 +138,18 @@ func getDBDriver(ctx context.Context, conf *sqlfactory.Config) (*sql.DB, migrati
 			return nil, nil, "", err
 		}
 		return conn, driver, conf.MySQL.Database, nil
+	case sqlfactory.MSSQL:
+		conn, err := mssql.NewConnection(ctx, conf.MSSQL)
+		if err != nil {
+			logger.Error(ctx, "error creating mssql connection: %v", err)
+			return nil, nil, "", err
+		}
+		driver, err := sqlserver.WithInstance(conn, &sqlserver.Config{DatabaseName: conf.MSSQL.Database})
+		if err != nil {
+			logger.Error(ctx, "error creating mssql driver: %v", err)
+			return nil, nil, "", err
+		}
+		return conn, driver, conf.MSSQL.Database, nil
 	default:
 		logger.Error(ctx, "invalid repository name: current: %s , Expected: %s", conf.Name, sqlfactory.PostgreSQL)
 		return nil, nil, "", errors.New("invalid repository name")

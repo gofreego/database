@@ -36,6 +36,13 @@ func TestInsertMany(t *testing.T) {
 			wantErr: false,
 			pingErr: false,
 		},
+		{
+			name: "mssql insert many users",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -172,6 +179,13 @@ func TestInsertManyEmptyRecords(t *testing.T) {
 			wantErr: false,
 			pingErr: false,
 		},
+		{
+			name: "mssql insert many empty records",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -246,6 +260,13 @@ func TestInsertManyLargeBatch(t *testing.T) {
 			},
 			wantErr: false,
 			pingErr: false,
+		},
+		{
+			name: "mssql insert many large batch",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+			},
 		},
 	}
 
@@ -345,6 +366,13 @@ func TestInsertManyWithOptions(t *testing.T) {
 			},
 			wantErr: false,
 			pingErr: false,
+		},
+		{
+			name: "mssql insert many with options",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+			},
 		},
 	}
 

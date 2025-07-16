@@ -5,8 +5,8 @@ import (
 	driver "database/sql"
 	"fmt"
 
-	_ "github.com/denisenkom/go-mssqldb"
-	"github.com/gofreego/database/sql/impls/unimplemented"
+	"github.com/gofreego/database/sql/internal"
+	_ "github.com/microsoft/go-mssqldb"
 )
 
 type Config struct {
@@ -18,12 +18,12 @@ type Config struct {
 }
 
 type MssqlDatabase struct {
-	db *driver.DB
-	unimplemented.Unimplemented
+	db                 *driver.DB
+	preparedStatements internal.PreparedStatements
 }
 
 func NewConnection(ctx context.Context, config *Config) (*driver.DB, error) {
-	db, err := driver.Open("mssql", fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s", config.Host, config.Port, config.User, config.Password, config.Database))
+	db, err := driver.Open("sqlserver", fmt.Sprintf("server=%s;port=%d;user id=%s;password=%s;database=%s", config.Host, config.Port, config.User, config.Password, config.Database))
 	if err != nil {
 		return nil, err
 	}
@@ -31,11 +31,14 @@ func NewConnection(ctx context.Context, config *Config) (*driver.DB, error) {
 }
 
 func NewMssqlDatabase(ctx context.Context, config *Config) (*MssqlDatabase, error) {
-	db, err := NewConnection(ctx, config)
+	conn, err := NewConnection(ctx, config)
 	if err != nil {
 		return nil, err
 	}
-	return &MssqlDatabase{db: db}, nil
+	return &MssqlDatabase{
+		db:                 conn,
+		preparedStatements: internal.NewPreparedStatements(),
+	}, nil
 }
 
 func (c *MssqlDatabase) Ping(ctx context.Context) error {
@@ -43,5 +46,6 @@ func (c *MssqlDatabase) Ping(ctx context.Context) error {
 }
 
 func (c *MssqlDatabase) Close(ctx context.Context) error {
-	return c.db.Close()
+	c.preparedStatements.Close()
+	return internal.HandleError(c.db.Close())
 }
