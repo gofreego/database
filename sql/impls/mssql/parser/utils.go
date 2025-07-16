@@ -40,7 +40,8 @@ func parseColumns(record sql.Record) string {
 // This function generates a string of placeholders for the values in the record.
 // it is used to create the VALUES part of the SQL INSERT/UPSERT statement.
 func getValuesPlaceHolders(lastIndex *int, record ...sql.Record) (string, []any) {
-	noOfColumns := len(record[0].Columns())
+	noOfColumns := len(record[0].Values())
+
 	valuesPlaceHolders := make([]string, len(record))
 	values := make([]any, 0)
 	for i := range len(record) {

@@ -25,3 +25,18 @@ func (m *mockIdOnlyRecord) Columns() []string       { return []string{"id"} }
 func (m *mockIdOnlyRecord) Values() []any           { return []any{} }
 func (m *mockIdOnlyRecord) Scan(row sql.Row) error  { return nil }
 func (m *mockIdOnlyRecord) SetDeleted(deleted bool) {}
+
+type mockUserRecord struct {
+	id    int64
+	name  string
+	email string
+}
+
+func (m *mockUserRecord) ID() int64               { return m.id }
+func (m *mockUserRecord) IdColumn() string        { return "id" }
+func (m *mockUserRecord) SetID(id int64)          { m.id = id }
+func (m *mockUserRecord) Table() *sql.Table       { return sql.NewTable("users") }
+func (m *mockUserRecord) Columns() []string       { return []string{"id", "name", "email"} }
+func (m *mockUserRecord) Values() []any           { return []any{m.id, m.name, m.email} }
+func (m *mockUserRecord) Scan(row sql.Row) error  { return nil }
+func (m *mockUserRecord) SetDeleted(deleted bool) {}
