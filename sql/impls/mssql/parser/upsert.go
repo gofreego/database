@@ -8,43 +8,40 @@ import (
 	"github.com/gofreego/database/sql"
 )
 
-// ParseUpsertQuery generates a MERGE statement for MSSQL upsert
+const (
+	upsertQuery = "INSERT INTO %s (%s) VALUES %s ON DUPLICATE KEY UPDATE %s"
+)
+
 func ParseUpsertQuery(record sql.Record) (string, []any, error) {
 	if record == nil {
 		return "", nil, errors.New("no record provided")
 	}
-	tableName, err := parseTableName(record.Table())
+	var lastIndex int
+	tableName, err := parseTableName(record.Table(), &lastIndex)
 	if err != nil {
 		return "", nil, err
 	}
-	columns := []string{}
-	values := []any{}
-	placeholders := []string{}
+	placeholders, values := getValuesPlaceHolders(&lastIndex, record)
+	if len(values) == 0 {
+		return "", nil, errors.New("no values provided for upsert")
+	}
+
+	updates := parseUpsertUpdates(record)
+	if updates == "" {
+		return "", nil, errors.New("no columns to update")
+	}
+
+	return fmt.Sprintf(upsertQuery, tableName, parseColumns(record), placeholders, updates), values, nil
+}
+
+func parseUpsertUpdates(record sql.Record) string {
+	updates := []string{}
 	idColumn := record.IdColumn()
-	idValue := record.ID()
-	updateAssignments := []string{}
-	p := 1
 	for _, col := range record.Columns() {
 		if col == idColumn {
-			continue
+			continue // Skip the ID column in the update
 		}
-		columns = append(columns, col)
-		placeholders = append(placeholders, fmt.Sprintf("@p%d", p))
-		values = append(values, record.Values()[p-1])
-		updateAssignments = append(updateAssignments, fmt.Sprintf("%s = source.%s", col, col))
-		p++
+		updates = append(updates, fmt.Sprintf("%s = VALUES(%s)", col, col))
 	}
-	// Add id value for matching
-	values = append(values, idValue)
-	merge := fmt.Sprintf(`MERGE INTO %s AS target USING (SELECT %s) AS source (%s) ON (target.%s = @p%d)
-WHEN MATCHED THEN UPDATE SET %s
-WHEN NOT MATCHED THEN INSERT (%s) VALUES (%s);`,
-		tableName,
-		strings.Join(placeholders, ", "),
-		strings.Join(columns, ", "),
-		idColumn, p,
-		strings.Join(updateAssignments, ", "),
-		strings.Join(columns, ", "),
-		strings.Join(placeholders, ", "))
-	return merge, values, nil
+	return strings.Join(updates, ", ")
 }
