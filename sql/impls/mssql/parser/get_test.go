@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gofreego/database/sql"
+	"github.com/gofreego/database/sql/tests/records"
 )
 
 type mockRecords struct {
@@ -29,9 +30,9 @@ func TestParseGetByIDQuery(t *testing.T) {
 		{
 			name: "valid record",
 			args: args{
-				record: &mockIdOnlyRecord{Id: 1},
+				record: &records.User{Id: 1},
 			},
-			want:    "SELECT id FROM mock WHERE id = ?",
+			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE id = @p1",
 			wantErr: false,
 		},
 		{
@@ -73,9 +74,9 @@ func TestParseGetByFilterQuery(t *testing.T) {
 			name: "nil filter",
 			args: args{
 				filter:  nil,
-				records: &mockRecords{table: sql.NewTable("users"), columns: []string{"id", "name"}},
+				records: &records.Users{},
 			},
-			want:    "SELECT id, name FROM users",
+			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users",
 			want1:   nil,
 			wantErr: false,
 		},
@@ -89,9 +90,9 @@ func TestParseGetByFilterQuery(t *testing.T) {
 						Operator: sql.EQ,
 					},
 				},
-				records: &mockRecords{table: sql.NewTable("users"), columns: []string{"id", "name"}},
+				records: &records.Users{},
 			},
-			want:    "SELECT id, name FROM users WHERE name = @p1",
+			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE name = @p1",
 			want1:   []int{0},
 			wantErr: false,
 		},
@@ -108,9 +109,9 @@ func TestParseGetByFilterQuery(t *testing.T) {
 								Operator: sql.EQ,
 							},
 							{
-								Field:    "age",
-								Value:    sql.NewValue(30),
-								Operator: sql.GT,
+								Field:    "is_active",
+								Value:    sql.NewValue(1),
+								Operator: sql.EQ,
 							},
 							{
 								Field:    "name",
@@ -119,14 +120,14 @@ func TestParseGetByFilterQuery(t *testing.T) {
 							},
 						},
 					},
-					GroupBy: sql.NewGroupBy("city", "country"),
-					Sort:    sql.NewSort().Add("age", sql.Asc),
+					GroupBy: sql.NewGroupBy("is_active"),
+					Sort:    sql.NewSort().Add("created_at", sql.Desc),
 					Limit:   sql.NewValue(int64(10)),
 					Offset:  sql.NewIndexedValue(1),
 				},
-				records: &mockRecords{table: sql.NewTable("users"), columns: []string{"id", "name"}},
+				records: &records.Users{},
 			},
-			want:    "SELECT id, name FROM users WHERE (email = @p1 AND age > 30 AND name LIKE @p2) GROUP BY (city, country) ORDER BY age ASC LIMIT 10 OFFSET @p3",
+			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE (email = @p1 AND is_active = 1 AND name LIKE @p2) GROUP BY (is_active) ORDER BY created_at DESC LIMIT 10 OFFSET @p3",
 			want1:   []int{0, 2, 1},
 			wantErr: false,
 		},

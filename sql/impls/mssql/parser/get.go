@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	mysqlGetByIDQuery = "SELECT %s FROM %s WHERE id = ?"
-	mysqlGetQuery     = "SELECT %s FROM %s"
+	mssqlGetByIDQuery = "SELECT %s FROM %s WHERE id = @p1"
+	mssqlGetQuery     = "SELECT %s FROM %s"
 )
 
 func ParseGetByIDQuery(record sql.Record) (string, error) {
@@ -18,7 +18,7 @@ func ParseGetByIDQuery(record sql.Record) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(mysqlGetByIDQuery, strings.Join(record.Columns(), ", "), tableName), nil
+	return fmt.Sprintf(mssqlGetByIDQuery, strings.Join(record.Columns(), ", "), tableName), nil
 }
 
 func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []int, error) {
@@ -32,7 +32,7 @@ func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []i
 		return "", nil, err
 	}
 
-	query := fmt.Sprintf(mysqlGetQuery, strings.Join(records.Columns(), ", "), tableName)
+	query := fmt.Sprintf(mssqlGetQuery, strings.Join(records.Columns(), ", "), tableName)
 	if filterString != "" {
 		query += " " + filterString
 	}

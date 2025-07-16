@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	mysqlUpdateByIDQuery = "UPDATE %s SET %s WHERE %s = ?"
+	mssqlUpdateByIDQuery = "UPDATE %s SET %s WHERE %s = @p%d"
 )
 
 func ParseUpdateByIDQuery(record sql.Record) (string, error) {
@@ -24,7 +24,8 @@ func ParseUpdateByIDQuery(record sql.Record) (string, error) {
 	if updateString == "" {
 		return "", sql.NewInvalidQueryError("update query:: no columns to update")
 	}
-	return fmt.Sprintf(mysqlUpdateByIDQuery, tableName, updateString, record.IdColumn()), nil
+	lastIndex++
+	return fmt.Sprintf(mssqlUpdateByIDQuery, tableName, updateString, record.IdColumn(), lastIndex), nil
 }
 
 func getUpdatesString(record sql.Record, lastIndex *int) string {

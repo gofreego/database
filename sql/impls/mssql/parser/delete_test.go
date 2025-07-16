@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gofreego/database/sql"
+	"github.com/gofreego/database/sql/tests/records"
 )
 
 func TestParseDeleteByIDQuery(t *testing.T) {
@@ -20,9 +21,9 @@ func TestParseDeleteByIDQuery(t *testing.T) {
 		{
 			name: "test delete by id with valid record",
 			args: args{
-				record: &mockIdOnlyRecord{Id: 1},
+				record: &records.User{Id: 1},
 			},
-			want:    "DELETE FROM mock WHERE id = @p1",
+			want:    "DELETE FROM users WHERE id = @p1",
 			wantErr: false,
 		},
 		{
@@ -197,7 +198,7 @@ func TestParseSoftDeleteByIDQuery(t *testing.T) {
 			name: "test soft delete by id with valid record",
 			args: args{
 				table:  sql.NewTable("users"),
-				record: &mockIdOnlyRecord{Id: 1},
+				record: &records.User{Id: 1},
 			},
 			want:    "UPDATE users SET deleted = 1 WHERE id = @p1",
 			wantErr: false,
@@ -206,7 +207,7 @@ func TestParseSoftDeleteByIDQuery(t *testing.T) {
 			name: "test soft delete by id with nil table",
 			args: args{
 				table:  nil,
-				record: &mockIdOnlyRecord{Id: 1},
+				record: &records.User{Id: 1},
 			},
 			want:    "",
 			wantErr: true,
