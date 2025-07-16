@@ -1,3 +1,52 @@
+// Package sql provides a unified database interface for multiple database engines.
+// It supports PostgreSQL, MySQL, and MSSQL with a consistent API for common database operations.
+//
+// Features:
+//   - CRUD operations (Create, Read, Update, Delete)
+//   - Soft delete support
+//   - Prepared statements
+//   - Connection pooling
+//   - Transaction support
+//   - Migration handling
+//   - Query building with conditions, filters, and joins
+//
+// Example usage:
+//
+//	config := &sqlfactory.Config{
+//	    Name: sqlfactory.PostgreSQL,
+//	    PostgreSQL: &postgresql.Config{
+//	        Host:     "localhost",
+//	        Port:     5432,
+//	        User:     "user",
+//	        Password: "password",
+//	        Database: "mydb",
+//	    },
+//	}
+//
+//	db, err := sqlfactory.NewDatabase(ctx, config)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer db.Close(ctx)
+//
+//	// Insert a record
+//	user := &User{Name: "John", Email: "john@example.com"}
+//	err = db.Insert(ctx, user)
+//
+//	// Get by ID
+//	user = &User{Id: 1}
+//	err = db.GetByID(ctx, user)
+//
+//	// Get with filter
+//	filter := &sql.Filter{
+//	    Condition: &sql.Condition{
+//	        Field:    "email",
+//	        Operator: sql.EQ,
+//	        Value:    sql.NewValue("john@example.com"),
+//	    },
+//	}
+//	users := &Users{}
+//	err = db.Get(ctx, filter, []any{"john@example.com"}, users)
 package sql
 
 import (
@@ -5,49 +54,88 @@ import (
 	"reflect"
 )
 
+// Database defines the interface for database operations.
+// It provides a unified API for different database engines (PostgreSQL, MySQL, MSSQL).
 type Database interface {
-	// Ping the database to check if the connection is alive
+	// Ping checks if the database connection is alive.
+	// Returns an error if the connection is not available.
 	Ping(ctx context.Context) error
-	// Close the database connection and prepared statements
+
+	// Close closes the database connection and cleans up prepared statements.
+	// Should be called when the database is no longer needed.
 	Close(ctx context.Context) error
-	// Insert a single record into the database
+
+	// Insert adds a single record to the database.
+	// The record's ID will be set to the last inserted ID.
+	// Returns an error if the operation fails.
 	Insert(ctx context.Context, record Record, options ...Options) error
-	// Insert multiple records into the database
+
+	// InsertMany adds multiple records to the database in a single operation.
+	// Returns the number of rows affected and an error if the operation fails.
+	// Returns 0, nil if no records are provided.
 	InsertMany(ctx context.Context, records []Record, options ...Options) (int64, error)
-	// Upsert a single record into the database
+
+	// Upsert inserts a record if it doesn't exist, or updates it if it does.
+	// Returns true if a new record was inserted, false if an existing record was updated.
+	// Returns an error if the operation fails.
 	Upsert(ctx context.Context, record Record, options ...Options) (bool, error)
-	// Get a single record by id and scan the record values into the record
+
+	// GetByID retrieves a single record by its ID.
+	// The record parameter should have the ID set, and the method will populate other fields.
+	// Returns sql.ErrNoRecordFound if no record exists with the given ID.
 	GetByID(ctx context.Context, record Record, options ...Options) error
-	// Get multiple records by filter and scan the records into the record
+
+	// Get retrieves multiple records based on the provided filter.
+	// The filter can include conditions, grouping, sorting, limit, and offset.
+	// The values slice should contain the parameter values in the order they appear in the filter.
+	// The records parameter will be populated with the results.
 	Get(ctx context.Context, filter *Filter, values []any, record Records, options ...Options) error
-	// This will update the record with the id of the record and return if the record is updated
+
+	// UpdateByID updates a record by its ID.
+	// The record parameter should have the ID and the fields to update set.
+	// Returns true if the record was updated, false if no record exists with the given ID.
 	UpdateByID(ctx context.Context, record Record, options ...Options) (bool, error)
-	// This will update the records with condition and return the number of rows affected
+
+	// Update updates records based on the provided condition.
+	// The updates parameter specifies which fields to update and their new values.
+	// The condition parameter specifies which records to update.
+	// The values slice should contain the parameter values in the order they appear in the condition.
+	// Returns the number of rows affected and an error if the operation fails.
 	Update(ctx context.Context, table *Table, updates *Updates, condition *Condition, values []any, options ...Options) (int64, error)
-	// This will soft delete the record with the id of the record and return if the record is soft deleted
-	// This will update the deleted field to 1, table must have a deleted field
+
+	// SoftDeleteByID marks a record as deleted by setting its deleted field to true.
+	// The table must have a deleted field for this operation to work.
+	// Returns true if the record was soft deleted, false if no record exists with the given ID.
 	SoftDeleteByID(ctx context.Context, record Record, options ...Options) (bool, error)
+
+	// SoftDelete marks records as deleted based on the provided condition.
+	// The table must have a deleted field for this operation to work.
+	// The condition parameter specifies which records to soft delete.
+	// The values slice should contain the parameter values in the order they appear in the condition.
+	// Returns the number of rows affected and an error if the operation fails.
 	SoftDelete(ctx context.Context, table *Table, condition *Condition, values []any, options ...Options) (int64, error)
-	// This will delete the record with the id of the record and return if the record is deleted
+
+	// DeleteByID permanently removes a record by its ID.
+	// Returns true if the record was deleted, false if no record exists with the given ID.
 	DeleteByID(ctx context.Context, record Record, options ...Options) (bool, error)
-	// This will delete the records with condition and return the number of rows affected
+
+	// Delete permanently removes records based on the provided condition.
+	// The condition parameter specifies which records to delete.
+	// The values slice should contain the parameter values in the order they appear in the condition.
+	// Returns the number of rows affected and an error if the operation fails.
 	Delete(ctx context.Context, table *Table, condition *Condition, values []any, options ...Options) (int64, error)
 }
 
-/*
-*
-************ Table
-************ Table is used to represent a table in the database.
-*
-*
- */
-
+// Table represents a database table with optional joins.
+// It's used for building complex queries with multiple table joins.
 type Table struct {
-	Name  string
-	Alias string
-	Join  []Join
+	Name  string // The name of the table
+	Alias string // Optional alias for the table
+	Join  []Join // List of joins with other tables
 }
 
+// NewTable creates a new Table instance with the given name.
+// The name should be the actual table name in the database.
 func NewTable(name string) *Table {
 	return &Table{
 		Name: name,
@@ -55,6 +143,9 @@ func NewTable(name string) *Table {
 	}
 }
 
+// WithInnerJoin adds an INNER JOIN to the table.
+// The on parameter specifies the join condition.
+// Returns the table instance for method chaining.
 func (t *Table) WithInnerJoin(table *Table, on *Condition) *Table {
 	t.Join = append(t.Join, Join{
 		Table: table,
@@ -64,6 +155,9 @@ func (t *Table) WithInnerJoin(table *Table, on *Condition) *Table {
 	return t
 }
 
+// WithLeftJoin adds a LEFT JOIN to the table.
+// The on parameter specifies the join condition.
+// Returns the table instance for method chaining.
 func (t *Table) WithLeftJoin(table *Table, on *Condition) *Table {
 	t.Join = append(t.Join, Join{
 		Table: table,
@@ -73,6 +167,9 @@ func (t *Table) WithLeftJoin(table *Table, on *Condition) *Table {
 	return t
 }
 
+// WithRightJoin adds a RIGHT JOIN to the table.
+// The on parameter specifies the join condition.
+// Returns the table instance for method chaining.
 func (t *Table) WithRightJoin(table *Table, on *Condition) *Table {
 	t.Join = append(t.Join, Join{
 		Table: table,
@@ -82,97 +179,138 @@ func (t *Table) WithRightJoin(table *Table, on *Condition) *Table {
 	return t
 }
 
+// Row represents a single row from a database query result.
+// It provides a Scan method to extract values from the row.
 type Row interface {
+	// Scan copies the columns in the current row into the values pointed at by dest.
+	// The number of values in dest must be the same as the number of columns in the row.
 	Scan(dest ...any) error
 }
 
+// Rows represents a set of rows from a database query result.
+// It extends Row with a Next method to iterate through the rows.
 type Rows interface {
 	Row
+	// Next prepares the next result row for reading with the Scan method.
+	// It returns true on success, or false if there is no next result row or an error occurred.
 	Next() bool
 }
 
-// record fields should be exported and should have a sql tag for the column name
+// Record represents a single database record.
+// It provides methods for getting/setting the record's ID, table information, and field values.
+// Record fields should be exported and have a sql tag for the column name.
 type Record interface {
+	// ID returns the record's primary key ID.
 	ID() int64
-	// This is useful to remove id column while inserting the records
+
+	// IdColumn returns the name of the ID column.
+	// This is used to exclude the ID column from insert operations.
 	IdColumn() string
+
+	// SetID sets the record's primary key ID.
 	SetID(id int64)
+
+	// Table returns the table information for this record.
 	Table() *Table
+
+	// Columns returns the names of all columns in the record.
+	// The ID column should be included in this list.
 	Columns() []string
+
+	// Values returns the values of all non-ID columns in the record.
+	// These values are used for insert and update operations.
 	Values() []any
+
+	// Scan populates the record's fields from a database row.
+	// The dest parameter should be pointers to the record's fields in the correct order.
 	Scan(row Row) error
+
+	// SetDeleted marks the record as deleted (for soft delete operations).
 	SetDeleted(deleted bool)
 }
 
+// Records represents a collection of database records.
+// It provides methods for getting table information and scanning multiple rows.
 type Records interface {
+	// Table returns the table information for these records.
 	Table() *Table
+
+	// Columns returns the names of all columns in the records.
 	Columns() []string
+
+	// Scan populates the records from a database result set.
+	// The rows parameter contains the result rows to scan.
 	Scan(rows Rows) error
 }
 
-/************ Sorting ************/
-
+// Order represents the sort order for a field.
 type Order int
 
 const (
-	Asc Order = iota
-	Desc
+	Asc  Order = iota // Ascending order
+	Desc              // Descending order
 )
 
+// OrderBy represents a field and its sort order.
 type OrderBy struct {
-	Field string
-	Order Order
+	Field string // The field name to sort by
+	Order Order  // The sort order (Asc or Desc)
 }
 
+// Sort represents a collection of sort criteria.
 type Sort struct {
 	fields []OrderBy
 }
 
+// NewSort creates a new Sort instance.
 func NewSort() *Sort {
 	return &Sort{
 		fields: make([]OrderBy, 0),
 	}
 }
 
+// Add adds a sort criterion to the sort collection.
+// Returns the sort instance for method chaining.
 func (o *Sort) Add(field string, order Order) *Sort {
 	o.fields = append(o.fields, OrderBy{Field: field, Order: order})
 	return o
 }
 
+// Fields returns all the sort criteria.
 func (o *Sort) Fields() []OrderBy {
 	return o.fields
 }
 
-/************ Conditions ************/
-
+// Operator represents the type of comparison or logical operation.
 type Operator int
 
 const (
 	// Comparison Operators
-	EQ  Operator = iota // Equal to
-	NEQ                 // Not equal to
-	GT                  // Greater than
-	GTE                 // Greater than or equal to
-	LT                  // Less than
-	LTE                 // Less than or equal to
+	EQ  Operator = iota // Equal to (=)
+	NEQ                 // Not equal to (<>)
+	GT                  // Greater than (>)
+	GTE                 // Greater than or equal to (>=)
+	LT                  // Less than (<)
+	LTE                 // Less than or equal to (<=)
 	// Logical Operators
-	AND // Both conditions must be true
-	OR  // At least one condition is true
-	NOT // Negates the condition
+	AND // Both conditions must be true (AND)
+	OR  // At least one condition is true (OR)
+	NOT // Negates the condition (NOT)
 	// Special Operators
-	IN         // Value exists in a list
-	NOTIN      // Value does not exist in list
-	LIKE       // Pattern match (wildcard %, _)
-	NOTLIKE    // Pattern not matching\
-	ISNULL     // Field is NULL
-	ISNOTNULL  // Field is not NULL
-	EXISTS     // Subquery returns rows
-	NOTEXISTS  // Subquery returns no rows
-	REGEXP     // Matches regular expression
-	BETWEEN    // Value is within range (inclusive)
-	NOTBETWEEN // Value is not within range (inclusive)
+	IN         // Value exists in a list (IN)
+	NOTIN      // Value does not exist in list (NOT IN)
+	LIKE       // Pattern match with wildcards (LIKE)
+	NOTLIKE    // Pattern not matching (NOT LIKE)
+	ISNULL     // Field is NULL (IS NULL)
+	ISNOTNULL  // Field is not NULL (IS NOT NULL)
+	EXISTS     // Subquery returns rows (EXISTS)
+	NOTEXISTS  // Subquery returns no rows (NOT EXISTS)
+	REGEXP     // Matches regular expression (REGEXP)
+	BETWEEN    // Value is within range, inclusive (BETWEEN)
+	NOTBETWEEN // Value is not within range, inclusive (NOT BETWEEN)
 )
 
+// String returns the string representation of the operator.
 func (o Operator) String() string {
 	switch o {
 	case EQ:
@@ -220,27 +358,34 @@ func (o Operator) String() string {
 	}
 }
 
+// GroupBy represents grouping criteria for aggregation queries.
 type GroupBy struct {
 	fields []string
 }
 
+// NewGroupBy creates a new GroupBy instance with the specified fields.
 func NewGroupBy(fields ...string) *GroupBy {
 	return &GroupBy{
 		fields: fields,
 	}
 }
 
+// Fields returns the grouping fields.
 func (g *GroupBy) Fields() []string {
 	return g.fields
 }
 
+// Condition represents a single condition in a WHERE clause.
+// It can be a simple comparison or a complex logical operation.
 type Condition struct {
-	Field      string // The field name to apply the condition on i.e. column name (e. "email", "is_active")
-	Value      *Value
-	Operator   Operator    // The operator to apply the condition (e.g. EQ, NEQ, GT, etc.)
+	Field      string      // The field name to apply the condition on (e.g., "email", "is_active")
+	Value      *Value      // The value to compare against
+	Operator   Operator    // The operator to apply (e.g., EQ, NEQ, GT, etc.)
 	Conditions []Condition // Nested conditions for AND/OR operations
 }
 
+// Validate checks if the condition is properly configured.
+// Returns an error if the condition is invalid.
 func (c *Condition) Validate() error {
 	if c == nil {
 		return nil // No condition to validate
@@ -283,15 +428,7 @@ func (c *Condition) Validate() error {
 	}
 }
 
-/*
-*
-*
-************ Filter
-************ Filter is used to filter the records based on the condition, group by, sort and
-*
-*
- */
-
+// Filter represents a complete query filter with conditions, grouping, sorting, and pagination.
 type Filter struct {
 	Condition *Condition // The main condition for the filter
 	GroupBy   *GroupBy   // Grouping fields for aggregation
@@ -300,99 +437,91 @@ type Filter struct {
 	Offset    *Value     // Offset the number of records returned
 }
 
-/*
-**
-************ Updates
-************ Updates are used to update the fields of a record.
-*
-*
- */
-
+// UpdateField represents a single field update operation.
 type UpdateField struct {
-	Field string
-	Value *Value
+	Field string // The field name to update
+	Value *Value // The new value for the field
 }
 
+// Updates represents a collection of field updates.
 type Updates struct {
 	Fields []UpdateField
 }
 
+// NewUpdates creates a new Updates instance.
 func NewUpdates() *Updates {
 	return &Updates{
 		Fields: make([]UpdateField, 0),
 	}
 }
 
+// Add adds a field update to the updates collection.
+// Returns the updates instance for method chaining.
 func (u *Updates) Add(field string, value *Value) *Updates {
 	u.Fields = append(u.Fields, UpdateField{Field: field, Value: value})
 	return u
 }
 
-/*
-*
-*
- ***** Joins
-*
-*
-*/
-
+// JoinType represents the type of join operation.
 type JoinType int
 
 const (
-	InnerJoin JoinType = iota
-	LeftJoin
-	RightJoin
+	InnerJoin JoinType = iota // INNER JOIN
+	LeftJoin                  // LEFT JOIN
+	RightJoin                 // RIGHT JOIN
 )
 
+// Join represents a table join operation.
 type Join struct {
-	Type  JoinType
-	Table *Table
-	On    *Condition
+	Type  JoinType   // The type of join (InnerJoin, LeftJoin, RightJoin)
+	Table *Table     // The table to join with
+	On    *Condition // The join condition
 }
 
-/*
-*
-*
-************ Values
-************ These are used for internal purposes to represent the type of value for adding validations.
-*
-*
- */
+// ValueType represents the type of value for validation purposes.
 type ValueType int
 
 const (
-	Any ValueType = iota
-	Column
+	Any    ValueType = iota // Any value type
+	Column                  // Column reference
 )
 
+// Value represents a value in a query condition or update operation.
+// It can be a fixed value, a parameterized value, or a column reference.
 type Value struct {
-	// This is used for internal purpose to specify the type of value needed for validation
+	// Type specifies the type of value for validation purposes
 	Type ValueType
-	// // This is used for fixed values that are not parameterized. These values will be hardcoded
-	// // in the query. Use this carefully, as it may lead to SQL injection if the value is not sanitized.
+	// Value is used for fixed values that are not parameterized.
+	// These values will be hardcoded in the query.
+	// Use this carefully, as it may lead to SQL injection if the value is not sanitized.
 	Value any
-	// This is used for parameterized queries where the value is not fixed and is passed as a parameter.
-	// if value is used for IN/NOTIN operators. use WithCount to specify the number of values to use from the values slice
-	// Index is the index of the value in the values slice for parameterized queries
+	// Index is the index of the value in the values slice for parameterized queries.
+	// Used when Value is nil and the value comes from a parameter slice.
 	Index int
-	Count int // This is used for IN/NOTIN operators to specify the number of values to use from the values slice
+	// Count is used for IN/NOTIN operators to specify the number of values to use from the values slice.
+	Count int
 }
 
-// This method is used for internal purpose
+// WithType sets the value type for validation purposes.
+// Returns the value instance for method chaining.
 func (v *Value) WithType(t ValueType) *Value {
 	v.Type = t
 	return v
 }
 
+// WithCount sets the count for IN/NOTIN operators.
+// Returns the value instance for method chaining.
 func (v *Value) WithCount(count int) *Value {
 	v.Count = count
 	return v
 }
 
+// IsColumn returns true if the value is a column reference.
 func (v *Value) IsColumn() bool {
 	return v.Type == Column
 }
 
+// IsStringValue returns true if the value is a string type.
 func (v *Value) IsStringValue() bool {
 	if v.Value == nil {
 		return false
@@ -400,13 +529,14 @@ func (v *Value) IsStringValue() bool {
 	return reflect.TypeOf(v.Value).Kind() == reflect.String
 }
 
+// IsValue returns true if the value has a fixed value set.
 func (v *Value) IsValue() bool {
 	return v.Value != nil
 }
 
 // NewIndexedValue creates a new Value with the specified index.
 // This is used for parameterized queries where the value is not fixed and is passed as a parameter.
-// if value is used for IN/NOTIN operators. use WithCount to specify the number of values to use from the values slice
+// For IN/NOTIN operators, use WithCount to specify the number of values to use from the values slice.
 func NewIndexedValue(index int) *Value {
 	return &Value{
 		Type:  Any,
@@ -424,6 +554,8 @@ func NewValue(value any) *Value {
 	}
 }
 
+// NewColumnValue creates a new Value that references a column.
+// This is used for conditions that compare one column to another.
 func NewColumnValue(column string) *Value {
 	return &Value{
 		Type:  Column,
@@ -431,7 +563,9 @@ func NewColumnValue(column string) *Value {
 	}
 }
 
-// Asssuming validation is already applied that valuesPassed has enough values
+// GetValues extracts values from a slice based on the provided indexes.
+// It handles both scalar values and array values (for IN/NOTIN operators).
+// Assumes validation has already been applied to ensure valuesPassed has enough values.
 func GetValues(indexs []int, values []any) []any {
 	if len(indexs) == 0 {
 		return nil
@@ -454,22 +588,22 @@ func GetValues(indexs []int, values []any) []any {
 	return result
 }
 
-/*
- # Options is used to pass additional options to the database operations.
- # It can be used to specify whether to use the primary database or to prepare the query.
-*/
-
+// Options provides additional configuration for database operations.
+// It can be used to specify database selection, query preparation, and timeouts.
 type Options struct {
-	// if you want to use the primary database, use this option
-	// no need to set this in case of write operations. It by default chooses primary db.
+	// UsePrimaryDB specifies whether to use the primary database.
+	// No need to set this for write operations as they default to the primary database.
 	UsePrimaryDB bool
-	// if you want to prepare the query, use this option
-	PreparedName string // It should be unique for each diff type of query
-	Timeout      int64  // Timeout in milliseconds for the query execution
+	// PreparedName specifies a unique name for prepared statement caching.
+	// If set, the query will be prepared and cached for reuse.
+	PreparedName string
+	// Timeout specifies the query execution timeout in milliseconds.
+	Timeout int64
 }
 
-// GetOptions returns the first option from the options slice if available, otherwise returns an empty Options struct.
-// This is used internal purpose of the library
+// GetOptions returns the first option from the options slice if available,
+// otherwise returns an empty Options struct.
+// This is used internally by the library.
 func GetOptions(options ...Options) Options {
 	if len(options) > 0 {
 		return options[0]
