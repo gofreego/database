@@ -49,7 +49,7 @@ func CleanDirtyState(ctx context.Context, cfg *sqlfactory.Config) error {
 	return err
 }
 
-func MigrationUP(ctx context.Context, cfg *sqlfactory.Config) error {
+func MigrationUP(ctx context.Context, cfg *sqlfactory.Config, t *testing.T) (bool, error) {
 	// Clean up any dirty state before running migrations
 	if err := CleanDirtyState(ctx, cfg); err != nil {
 		// If schema_migrations table doesn't exist, that's fine - it means no migrations have been run yet
@@ -69,10 +69,14 @@ func MigrationUP(ctx context.Context, cfg *sqlfactory.Config) error {
 		FilesPath: filesPath,
 		Action:    migrator.ACTION_UP,
 	})
-	return migrator.Run(ctx)
+	applied, err := migrator.Run(ctx)
+	if err != nil {
+		t.Errorf("MigrationUP() failed: %v", err)
+	}
+	return applied, err
 }
 
-func MigrationDown(ctx context.Context, cfg *sqlfactory.Config) error {
+func MigrationDown(ctx context.Context, cfg *sqlfactory.Config, t *testing.T) (bool, error) {
 	filesPath := "./migrations/mysql"
 	switch cfg.Name {
 	case sqlfactory.PostgreSQL:
@@ -86,7 +90,11 @@ func MigrationDown(ctx context.Context, cfg *sqlfactory.Config) error {
 		FilesPath: filesPath,
 		Action:    migrator.ACTION_DOWN,
 	})
-	return migrator.Run(ctx)
+	applied, err := migrator.Run(ctx)
+	if err != nil {
+		t.Errorf("MigrationDown() failed: %v", err)
+	}
+	return applied, err
 }
 
 func TestMigration(t *testing.T) {
@@ -163,13 +171,9 @@ func TestMigration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.args.action == migrator.ACTION_UP {
-				if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
-					t.Errorf("MigrationUP() failed: %v", err)
-				}
+				MigrationUP(tt.args.ctx, tt.args.config, t)
 			} else {
-				if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
-					t.Errorf("MigrationDown() failed: %v", err)
-				}
+				MigrationDown(tt.args.ctx, tt.args.config, t)
 			}
 		})
 	}

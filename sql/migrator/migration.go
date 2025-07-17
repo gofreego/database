@@ -40,17 +40,17 @@ func NewMigrator(ctx context.Context, conf *Config) *Migrator {
 	return &Migrator{conf: conf}
 }
 
-func (app *Migrator) Run(ctx context.Context) error {
+func (app *Migrator) Run(ctx context.Context) (bool, error) {
 	logger.Info(ctx, "MigrationScript started for %s with action: %s", app.conf.Database.Name, app.conf.Action)
 	fileSource, err := (&file.File{}).Open(app.conf.FilesPath)
 	if err != nil {
 		logger.Error(ctx, "error opening migration source directory:%s, error: %s", app.conf.FilesPath, err.Error())
-		return err
+		return false, err
 	}
 	defer fileSource.Close()
 	conn, db, dbname, err := getDBDriver(ctx, &app.conf.Database)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if app.conf.Action == ACTION_DOWN {
 		var cleanSQL string
@@ -74,7 +74,7 @@ func (app *Migrator) Run(ctx context.Context) error {
 	app.m, err = migrate.NewWithInstance("source", fileSource, dbname, db)
 	if err != nil {
 		logger.Error(ctx, "error creating migrate instance: %v", err)
-		return err
+		return false, err
 	}
 
 	switch app.conf.Action {
@@ -83,25 +83,25 @@ func (app *Migrator) Run(ctx context.Context) error {
 		if err := app.m.Up(); err != nil {
 			if err == migrate.ErrNoChange {
 				logger.Info(ctx, "no change")
-				return nil
+				return false, nil
 			}
 			logger.Error(ctx, "error applying up migration: %v", err)
-			return err
+			return false, err
 		}
 	case ACTION_DOWN:
 		if err := app.m.Down(); err != nil {
 			if err == migrate.ErrNoChange {
 				logger.Info(ctx, "no change")
-				return nil
+				return false, nil
 			}
 			logger.Error(ctx, "error applying down migration: %v", err)
-			return err
+			return false, err
 		}
 	default:
 		logger.Error(ctx, "invalid action current: `%s` Expected : `%s` | `%s`", app.conf.Action, ACTION_UP, ACTION_DOWN)
 	}
 	logger.Info(ctx, "Migration applied successfully!")
-	return nil
+	return true, nil
 }
 
 func (app *Migrator) Shutdown(ctx context.Context) {

@@ -30,14 +30,8 @@ func TestMysqlDatabase_UpdateByID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			if err := MigrationUP(ctx, tt.cfg); err != nil {
-				t.Errorf("MigrationUP() failed: %v", err)
-			}
-			defer func() {
-				if err := MigrationDown(ctx, tt.cfg); err != nil {
-					t.Errorf("MigrationDown() failed: %v", err)
-				}
-			}()
+			MigrationUP(ctx, tt.cfg, t)
+			defer MigrationDown(ctx, tt.cfg, t)
 
 			db, err := sqlfactory.NewDatabase(ctx, tt.cfg)
 			if err != nil {

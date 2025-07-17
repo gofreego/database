@@ -141,14 +141,8 @@ func TestInsertAndGet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
-				t.Errorf("MigrationUP() failed: %v", err)
-			}
-			defer func() {
-				if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
-					t.Errorf("MigrationDown() failed: %v", err)
-				}
-			}()
+			MigrationUP(tt.args.ctx, tt.args.config, t)
+			defer MigrationDown(tt.args.ctx, tt.args.config, t)
 			executeGetTestFunc(t, tt)
 		})
 	}
@@ -188,14 +182,8 @@ func TestMysqlDatabase_GetByFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
-				t.Errorf("MigrationUP() failed: %v", err)
-			}
-			defer func() {
-				if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
-					t.Errorf("MigrationDown() failed: %v", err)
-				}
-			}()
+			MigrationUP(tt.args.ctx, tt.args.config, t)
+			defer MigrationDown(tt.args.ctx, tt.args.config, t)
 
 			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if (err != nil) != tt.wantErr {
@@ -381,16 +369,8 @@ func TestInsertAndGet_EdgeCases(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
-				t.Errorf("MigrationUP() failed: %v", err)
-				return
-			}
-			defer func() {
-				if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
-					t.Errorf("MigrationDown() failed: %v", err)
-					return
-				}
-			}()
+			MigrationUP(tt.args.ctx, tt.args.config, t)
+			defer MigrationDown(tt.args.ctx, tt.args.config, t)
 			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if err != nil {
 				t.Fatalf("NewConnection() error = %v", err)
@@ -492,16 +472,8 @@ func TestMysqlDatabase_GetByFilter_Advanced(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := MigrationUP(tt.args.ctx, tt.args.config); err != nil {
-				t.Errorf("MigrationUP() failed: %v", err)
-				return
-			}
-			defer func() {
-				if err := MigrationDown(tt.args.ctx, tt.args.config); err != nil {
-					t.Errorf("MigrationDown() failed: %v", err)
-					return
-				}
-			}()
+			MigrationUP(tt.args.ctx, tt.args.config, t)
+			defer MigrationDown(tt.args.ctx, tt.args.config, t)
 			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)
 			if err != nil {
 				t.Fatalf("NewConnection() error = %v", err)
