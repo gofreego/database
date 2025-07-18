@@ -402,7 +402,7 @@ func TestParseUpdateQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := ParseUpdateQuery(tt.args.table, tt.args.updates, tt.args.condition)
+			got, got1, err := prsr.ParseUpdateQuery(tt.args.table, tt.args.updates, tt.args.condition)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseUpdateQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -12,7 +12,7 @@ const (
 	mssqlGetQuery     = "SELECT %s FROM %s"
 )
 
-func ParseGetByIDQuery(record sql.Record) (string, error) {
+func (p *parser) ParseGetByIDQuery(record sql.Record) (string, error) {
 	var lastIndex int
 	tableName, err := parseTableName(record.Table(), &lastIndex)
 	if err != nil {
@@ -21,7 +21,7 @@ func ParseGetByIDQuery(record sql.Record) (string, error) {
 	return fmt.Sprintf(mssqlGetByIDQuery, strings.Join(record.Columns(), ", "), tableName), nil
 }
 
-func ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []int, error) {
+func (p *parser) ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []int, error) {
 	var lastIndex int
 	tableName, err := parseTableName(records.Table(), &lastIndex)
 	if err != nil {

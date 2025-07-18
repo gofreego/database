@@ -1,11 +1,10 @@
-package mysql
+package common
 
 import (
 	"context"
 	db "database/sql"
 
 	"github.com/gofreego/database/sql"
-	"github.com/gofreego/database/sql/impls/mysql/parser"
 	"github.com/gofreego/database/sql/internal"
 )
 
@@ -16,7 +15,7 @@ Returns 0, nil if no records are provided.
 Returns 0, sql.ErrNoRecordInserted if no records are inserted.
 */
 
-func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
+func (c *Executor) Upsert(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
 	opt := sql.GetOptions(options...)
 	var err error
 	var res db.Result
@@ -26,7 +25,7 @@ func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options .
 		var query string
 		var values []any
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, values, err = parser.ParseUpsertQuery(record)
+			query, values, err = c.parser.ParseUpsertQuery(record)
 			if err != nil {
 				return false, internal.HandleError(err)
 			}
@@ -42,7 +41,7 @@ func (c *MysqlDatabase) Upsert(ctx context.Context, record sql.Record, options .
 			return false, internal.HandleError(err)
 		}
 	} else {
-		query, values, err := parser.ParseUpsertQuery(record)
+		query, values, err := c.parser.ParseUpsertQuery(record)
 		if err != nil {
 			return false, internal.HandleError(err)
 		}

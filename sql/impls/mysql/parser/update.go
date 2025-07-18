@@ -11,6 +11,32 @@ const (
 	updateQuery = "UPDATE %s SET %s WHERE %s"
 )
 
+func (p *parser) ParseUpdateQuery(table *sql.Table, updates *sql.Updates, condition *sql.Condition) (string, []int, error) {
+	var valueIndexes []int
+	var updateClause string
+	var err error
+
+	if updates == nil {
+		return "", nil, errors.New("updates is nil")
+	}
+	tableName, err := parseTableName(table)
+	if err != nil {
+		return "", nil, err
+	}
+	updateClause, updateValueIndexes, err := parseUpdates(updates)
+	if err != nil {
+		return "", nil, err
+	}
+	valueIndexes = append(valueIndexes, updateValueIndexes...)
+	conditionQuery, conditionValueIndexes, err := parseCondition(condition)
+	if err != nil {
+		return "", nil, err
+	}
+	valueIndexes = append(valueIndexes, conditionValueIndexes...)
+
+	return fmt.Sprintf(updateQuery, tableName, updateClause, conditionQuery), valueIndexes, nil
+}
+
 func parseUpdates(updates *sql.Updates) (string, []int, error) {
 	var updateClause string
 	var valueIndexes []int
@@ -42,30 +68,4 @@ func parseUpdates(updates *sql.Updates) (string, []int, error) {
 	}
 
 	return updateClause, valueIndexes, nil
-}
-
-func ParseUpdateQuery(table *sql.Table, updates *sql.Updates, condition *sql.Condition) (string, []int, error) {
-	var valueIndexes []int
-	var updateClause string
-	var err error
-
-	if updates == nil {
-		return "", nil, errors.New("updates is nil")
-	}
-	tableName, err := parseTableName(table)
-	if err != nil {
-		return "", nil, err
-	}
-	updateClause, updateValueIndexes, err := parseUpdates(updates)
-	if err != nil {
-		return "", nil, err
-	}
-	valueIndexes = append(valueIndexes, updateValueIndexes...)
-	conditionQuery, conditionValueIndexes, err := parseCondition(condition)
-	if err != nil {
-		return "", nil, err
-	}
-	valueIndexes = append(valueIndexes, conditionValueIndexes...)
-
-	return fmt.Sprintf(updateQuery, tableName, updateClause, conditionQuery), valueIndexes, nil
 }

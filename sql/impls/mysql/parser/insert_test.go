@@ -70,7 +70,7 @@ func TestParseInsertQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := ParseInsertQuery(tt.args.record...)
+			got, got1, err := prsr.ParseInsertQuery(tt.args.record...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseInsertQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return

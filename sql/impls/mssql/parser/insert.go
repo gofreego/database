@@ -11,7 +11,7 @@ const (
 	insertQuery = "INSERT INTO %s (%s) VALUES %s"
 )
 
-func ParseInsertQuery(record ...sql.Record) (string, []any, error) {
+func (p *parser) ParseInsertQuery(record ...sql.Record) (string, []any, error) {
 	if len(record) == 0 {
 		return "", nil, errors.New("no record provided")
 	}

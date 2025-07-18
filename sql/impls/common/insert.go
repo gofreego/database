@@ -1,4 +1,4 @@
-package mysql
+package common
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	"github.com/gofreego/database/sql"
-	"github.com/gofreego/database/sql/impls/mysql/parser"
 	"github.com/gofreego/database/sql/internal"
 )
 
@@ -15,7 +14,7 @@ Insert inserts a record into the database.
 Returns an error if any.
 It will set the ID of the record to the last inserted ID.
 */
-func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options ...sql.Options) error {
+func (c *Executor) Insert(ctx context.Context, record sql.Record, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
 	var res db.Result
@@ -24,7 +23,7 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 		var ok bool
 		var query string
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, _, err = parser.ParseInsertQuery(record)
+			query, _, err = c.parser.ParseInsertQuery(record)
 			if err != nil {
 				return internal.HandleError(err)
 			}
@@ -41,7 +40,7 @@ func (c *MysqlDatabase) Insert(ctx context.Context, record sql.Record, options .
 			return internal.HandleError(err)
 		}
 	} else {
-		query, values, err := parser.ParseInsertQuery(record)
+		query, values, err := c.parser.ParseInsertQuery(record)
 		if err != nil {
 			return internal.HandleError(err)
 		}
@@ -65,7 +64,7 @@ Returns 0, nil if no records are provided.
 Returns 0, sql.ErrNoRecordInserted if no records are inserted.
 Query will not be prepared because of variable length of records, if you want to prepare the query, use Insert instead.
 */
-func (c *MysqlDatabase) InsertMany(ctx context.Context, records []sql.Record, options ...sql.Options) (int64, error) {
+func (c *Executor) InsertMany(ctx context.Context, records []sql.Record, options ...sql.Options) (int64, error) {
 	// if no records to insert
 	if len(records) == 0 {
 		return 0, nil
@@ -77,7 +76,7 @@ func (c *MysqlDatabase) InsertMany(ctx context.Context, records []sql.Record, op
 		var stmt *internal.PreparedStatement
 		var ok bool
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, _, err := parser.ParseInsertQuery(records...)
+			query, _, err := c.parser.ParseInsertQuery(records...)
 			if err != nil {
 				return 0, internal.HandleError(err)
 			}
@@ -96,7 +95,7 @@ func (c *MysqlDatabase) InsertMany(ctx context.Context, records []sql.Record, op
 			return 0, internal.HandleError(err)
 		}
 	} else {
-		query, values, err := parser.ParseInsertQuery(records...)
+		query, values, err := c.parser.ParseInsertQuery(records...)
 		if err != nil {
 			return 0, internal.HandleError(err)
 		}

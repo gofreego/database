@@ -13,7 +13,7 @@ const (
 	softDeleteQuery     = "UPDATE %s SET deleted = 1 WHERE %s"
 )
 
-func ParseDeleteByIDQuery(record sql.Record) (string, error) {
+func (p *parser) ParseDeleteByIDQuery(record sql.Record) (string, error) {
 	var lastIndex int
 	tableName, err := parseTableName(record.Table(), &lastIndex)
 	if err != nil {
@@ -22,7 +22,7 @@ func ParseDeleteByIDQuery(record sql.Record) (string, error) {
 	return fmt.Sprintf(deleteByIDQuery, tableName, record.IdColumn()), nil
 }
 
-func ParseDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int, error) {
+func (p *parser) ParseDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int, error) {
 	var lastIndex int
 	tableName, err := parseTableName(table, &lastIndex)
 	if err != nil {
@@ -35,7 +35,7 @@ func ParseDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int
 	return fmt.Sprintf(deleteQuery, tableName, conditionStr), values, nil
 }
 
-func ParseSoftDeleteByIDQuery(table *sql.Table, record sql.Record) (string, error) {
+func (p *parser) ParseSoftDeleteByIDQuery(table *sql.Table, record sql.Record) (string, error) {
 	var lastIndex int
 	tableName, err := parseTableName(table, &lastIndex)
 	if err != nil {
@@ -44,7 +44,7 @@ func ParseSoftDeleteByIDQuery(table *sql.Table, record sql.Record) (string, erro
 	return fmt.Sprintf(softDeleteByIDQuery, tableName, record.IdColumn()), nil
 }
 
-func ParseSoftDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int, error) {
+func (p *parser) ParseSoftDeleteQuery(table *sql.Table, condition *sql.Condition) (string, []int, error) {
 	var lastIndex int
 	tableName, err := parseTableName(table, &lastIndex)
 	if err != nil {

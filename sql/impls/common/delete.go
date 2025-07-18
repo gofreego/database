@@ -1,17 +1,16 @@
-package mysql
+package common
 
 import (
 	"context"
 	driver "database/sql"
 
 	"github.com/gofreego/database/sql"
-	"github.com/gofreego/database/sql/impls/mysql/parser"
 	"github.com/gofreego/database/sql/internal"
 	"github.com/gofreego/goutils/logger"
 )
 
 // DeleteByID implements sql.Database.
-func (c *MysqlDatabase) DeleteByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
+func (c *Executor) DeleteByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
 	opt := sql.GetOptions(options...)
 	var err error
 	var result driver.Result
@@ -22,7 +21,7 @@ func (c *MysqlDatabase) DeleteByID(ctx context.Context, record sql.Record, optio
 		var ok bool
 		// if prepared statement is not found, parse the query and create a new prepared statement
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err = parser.ParseDeleteByIDQuery(record)
+			query, err = c.parser.ParseDeleteByIDQuery(record)
 			if err != nil {
 				return false, internal.HandleError(err)
 			}
@@ -38,7 +37,7 @@ func (c *MysqlDatabase) DeleteByID(ctx context.Context, record sql.Record, optio
 		result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
 	} else {
 		// if prepared name is empty, parse the query and execute the query
-		query, err = parser.ParseDeleteByIDQuery(record)
+		query, err = c.parser.ParseDeleteByIDQuery(record)
 		if err != nil {
 			return false, internal.HandleError(err)
 		}
@@ -59,7 +58,7 @@ func (c *MysqlDatabase) DeleteByID(ctx context.Context, record sql.Record, optio
 }
 
 // Delete implements sql.Database.
-func (c *MysqlDatabase) Delete(ctx context.Context, table *sql.Table, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
+func (c *Executor) Delete(ctx context.Context, table *sql.Table, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
 	opt := sql.GetOptions(options...)
 	var err error
 	var result driver.Result
@@ -69,7 +68,7 @@ func (c *MysqlDatabase) Delete(ctx context.Context, table *sql.Table, condition 
 		var stmt *internal.PreparedStatement
 		var ok bool
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, valueIndexes, err = parser.ParseDeleteQuery(table, condition)
+			query, valueIndexes, err = c.parser.ParseDeleteQuery(table, condition)
 			if err != nil {
 				return 0, internal.HandleError(err)
 			}
@@ -83,7 +82,7 @@ func (c *MysqlDatabase) Delete(ctx context.Context, table *sql.Table, condition 
 		}
 		result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
 	} else {
-		query, valueIndexes, err = parser.ParseDeleteQuery(table, condition)
+		query, valueIndexes, err = c.parser.ParseDeleteQuery(table, condition)
 		if err != nil {
 			return 0, internal.HandleError(err)
 		}
@@ -100,7 +99,7 @@ func (c *MysqlDatabase) Delete(ctx context.Context, table *sql.Table, condition 
 	return rowsAffected, nil
 }
 
-func (c *MysqlDatabase) SoftDeleteByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
+func (c *Executor) SoftDeleteByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
 	opt := sql.GetOptions(options...)
 	var err error
 	var result driver.Result
@@ -110,7 +109,7 @@ func (c *MysqlDatabase) SoftDeleteByID(ctx context.Context, record sql.Record, o
 		var stmt *internal.PreparedStatement
 		var ok bool
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err = parser.ParseSoftDeleteByIDQuery(record.Table(), record)
+			query, err = c.parser.ParseSoftDeleteByIDQuery(record.Table(), record)
 			if err != nil {
 				return false, internal.HandleError(err)
 			}
@@ -124,7 +123,7 @@ func (c *MysqlDatabase) SoftDeleteByID(ctx context.Context, record sql.Record, o
 		}
 		result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
 	} else {
-		query, err = parser.ParseSoftDeleteByIDQuery(record.Table(), record)
+		query, err = c.parser.ParseSoftDeleteByIDQuery(record.Table(), record)
 		if err != nil {
 			return false, internal.HandleError(err)
 		}
@@ -141,7 +140,7 @@ func (c *MysqlDatabase) SoftDeleteByID(ctx context.Context, record sql.Record, o
 	return rowsAffected > 0, nil
 }
 
-func (c *MysqlDatabase) SoftDelete(ctx context.Context, table *sql.Table, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
+func (c *Executor) SoftDelete(ctx context.Context, table *sql.Table, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
 	opt := sql.GetOptions(options...)
 	var err error
 	var result driver.Result
@@ -151,7 +150,7 @@ func (c *MysqlDatabase) SoftDelete(ctx context.Context, table *sql.Table, condit
 		var stmt *internal.PreparedStatement
 		var ok bool
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, valueIndexes, err = parser.ParseSoftDeleteQuery(table, condition)
+			query, valueIndexes, err = c.parser.ParseSoftDeleteQuery(table, condition)
 			if err != nil {
 				return 0, internal.HandleError(err)
 			}
@@ -165,7 +164,7 @@ func (c *MysqlDatabase) SoftDelete(ctx context.Context, table *sql.Table, condit
 		}
 		result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
 	} else {
-		query, valueIndexes, err = parser.ParseSoftDeleteQuery(table, condition)
+		query, valueIndexes, err = c.parser.ParseSoftDeleteQuery(table, condition)
 		if err != nil {
 			return 0, internal.HandleError(err)
 		}

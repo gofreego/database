@@ -37,7 +37,7 @@ func TestParseDeleteByIDQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseDeleteByIDQuery(tt.args.record)
+			got, err := prsr.ParseDeleteByIDQuery(tt.args.record)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseDeleteByIDQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -168,7 +168,7 @@ func TestParseDeleteQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := ParseDeleteQuery(tt.args.table, tt.args.condition)
+			got, got1, err := prsr.ParseDeleteQuery(tt.args.table, tt.args.condition)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseDeleteQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -224,7 +224,7 @@ func TestParseSoftDeleteByIDQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseSoftDeleteByIDQuery(tt.args.table, tt.args.record)
+			got, err := prsr.ParseSoftDeleteByIDQuery(tt.args.table, tt.args.record)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseSoftDeleteByIDQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -373,7 +373,7 @@ func TestParseSoftDeleteQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, err := ParseSoftDeleteQuery(tt.args.table, tt.args.condition)
+			got, got1, err := prsr.ParseSoftDeleteQuery(tt.args.table, tt.args.condition)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseSoftDeleteQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return

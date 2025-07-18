@@ -1,15 +1,14 @@
-package postgresql
+package common
 
 import (
 	"context"
 
 	"github.com/gofreego/database/sql"
-	"github.com/gofreego/database/sql/impls/postgresql/parser"
 	"github.com/gofreego/database/sql/internal"
 	"github.com/gofreego/goutils/logger"
 )
 
-func (c *PostgresqlDatabase) Get(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
+func (c *Executor) Get(ctx context.Context, filter *sql.Filter, values []any, records sql.Records, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
 	var filterIndexes []int
@@ -20,7 +19,7 @@ func (c *PostgresqlDatabase) Get(ctx context.Context, filter *sql.Filter, values
 
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
 			var query string
-			query, filterIndexes, err = parser.ParseGetByFilterQuery(filter, records)
+			query, filterIndexes, err = c.parser.ParseGetByFilterQuery(filter, records)
 			if err != nil {
 				return internal.HandleError(err)
 			}
@@ -38,7 +37,7 @@ func (c *PostgresqlDatabase) Get(ctx context.Context, filter *sql.Filter, values
 		}
 	} else {
 		var query string
-		query, filterIndexes, err = parser.ParseGetByFilterQuery(filter, records)
+		query, filterIndexes, err = c.parser.ParseGetByFilterQuery(filter, records)
 		if err != nil {
 			return internal.HandleError(err)
 		}
@@ -51,7 +50,7 @@ func (c *PostgresqlDatabase) Get(ctx context.Context, filter *sql.Filter, values
 	return internal.HandleError(records.Scan(rows))
 }
 
-func (c *PostgresqlDatabase) GetByID(ctx context.Context, record sql.Record, options ...sql.Options) error {
+func (c *Executor) GetByID(ctx context.Context, record sql.Record, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
 	if opt.PreparedName != "" {
@@ -59,7 +58,7 @@ func (c *PostgresqlDatabase) GetByID(ctx context.Context, record sql.Record, opt
 		var ok bool
 
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err := parser.ParseGetByIDQuery(record)
+			query, err := c.parser.ParseGetByIDQuery(record)
 			if err != nil {
 				return internal.HandleError(err)
 			}
@@ -78,7 +77,7 @@ func (c *PostgresqlDatabase) GetByID(ctx context.Context, record sql.Record, opt
 		}
 		return internal.HandleError(record.Scan(row))
 	}
-	query, err := parser.ParseGetByIDQuery(record)
+	query, err := c.parser.ParseGetByIDQuery(record)
 	if err != nil {
 		return internal.HandleError(err)
 	}

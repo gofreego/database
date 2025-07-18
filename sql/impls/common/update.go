@@ -1,4 +1,4 @@
-package postgresql
+package common
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/gofreego/database/sql"
-	"github.com/gofreego/database/sql/impls/postgresql/parser"
 	"github.com/gofreego/database/sql/internal"
 	"github.com/gofreego/goutils/logger"
 )
@@ -14,7 +13,7 @@ import (
 // UpdateByID updates a record in the database by its ID.
 // It updates all fields except the id column, using the id column in the WHERE clause.
 // Returns true if a row was updated, false otherwise.
-func (c *PostgresqlDatabase) UpdateByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
+func (c *Executor) UpdateByID(ctx context.Context, record sql.Record, options ...sql.Options) (bool, error) {
 	if record == nil {
 		return false, sql.NewInvalidQueryError("update by id:: record cannot be nil")
 	}
@@ -31,7 +30,7 @@ func (c *PostgresqlDatabase) UpdateByID(ctx context.Context, record sql.Record, 
 		var ok bool
 
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err = parser.ParseUpdateByIDQuery(record)
+			query, err = c.parser.ParseUpdateByIDQuery(record)
 			if err != nil {
 				return false, err
 			}
@@ -48,7 +47,7 @@ func (c *PostgresqlDatabase) UpdateByID(ctx context.Context, record sql.Record, 
 			return false, fmt.Errorf("UpdateByID exec prepared failed: %w", err)
 		}
 	} else {
-		query, err = parser.ParseUpdateByIDQuery(record)
+		query, err = c.parser.ParseUpdateByIDQuery(record)
 		if err != nil {
 			return false, err
 		}
@@ -66,7 +65,7 @@ func (c *PostgresqlDatabase) UpdateByID(ctx context.Context, record sql.Record, 
 }
 
 // Update implements sql.Database.
-func (c *PostgresqlDatabase) Update(ctx context.Context, table *sql.Table, updates *sql.Updates, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
+func (c *Executor) Update(ctx context.Context, table *sql.Table, updates *sql.Updates, condition *sql.Condition, values []any, options ...sql.Options) (int64, error) {
 	opt := sql.GetOptions(options...)
 	var err error
 	var result driver.Result
@@ -76,7 +75,7 @@ func (c *PostgresqlDatabase) Update(ctx context.Context, table *sql.Table, updat
 		var stmt *internal.PreparedStatement
 		var ok bool
 		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, valueIndexes, err = parser.ParseUpdateQuery(table, updates, condition)
+			query, valueIndexes, err = c.parser.ParseUpdateQuery(table, updates, condition)
 			if err != nil {
 				return 0, internal.HandleError(err)
 			}
@@ -90,7 +89,7 @@ func (c *PostgresqlDatabase) Update(ctx context.Context, table *sql.Table, updat
 		}
 		result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
 	} else {
-		query, valueIndexes, err = parser.ParseUpdateQuery(table, updates, condition)
+		query, valueIndexes, err = c.parser.ParseUpdateQuery(table, updates, condition)
 		if err != nil {
 			return 0, internal.HandleError(err)
 		}

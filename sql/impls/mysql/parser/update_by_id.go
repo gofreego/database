@@ -11,7 +11,7 @@ const (
 	mysqlUpdateByIDQuery = "UPDATE %s SET %s WHERE %s = ?"
 )
 
-func ParseUpdateByIDQuery(record sql.Record) (string, error) {
+func (p *parser) ParseUpdateByIDQuery(record sql.Record) (string, error) {
 	if record == nil {
 		return "", sql.NewInvalidQueryError("update query:: record cannot be nil")
 	}

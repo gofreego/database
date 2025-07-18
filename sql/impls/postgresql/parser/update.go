@@ -11,7 +11,7 @@ const (
 	updateQuery = "UPDATE %s SET %s WHERE %s"
 )
 
-func ParseUpdateQuery(table *sql.Table, updates *sql.Updates, condition *sql.Condition) (string, []int, error) {
+func (p *parser) ParseUpdateQuery(table *sql.Table, updates *sql.Updates, condition *sql.Condition) (string, []int, error) {
 	var valueIndexes []int
 	var updateClause string
 	var err error

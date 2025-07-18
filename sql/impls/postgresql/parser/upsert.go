@@ -12,7 +12,7 @@ const (
 	upsertQuery = "INSERT INTO %s (%s) VALUES %s ON CONFLICT (id) DO UPDATE SET %s"
 )
 
-func ParseUpsertQuery(record sql.Record) (string, []any, error) {
+func (p *parser) ParseUpsertQuery(record sql.Record) (string, []any, error) {
 	if record == nil {
 		return "", nil, errors.New("no record provided")
 	}

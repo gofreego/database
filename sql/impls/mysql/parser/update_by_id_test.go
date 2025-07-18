@@ -60,7 +60,7 @@ func TestParseUpdateByIDQuery(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseUpdateByIDQuery(tt.args.record)
+			got, err := prsr.ParseUpdateByIDQuery(tt.args.record)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseUpdateByIDQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
