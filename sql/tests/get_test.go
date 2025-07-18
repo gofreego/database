@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gofreego/database/sql"
@@ -14,8 +15,31 @@ import (
 This file contains comprehensive tests for the get functionality of the sql package.
 This covers all the different ways that a get query can be constructed and executed.
 */
-
 var (
+	tests = []testCase{
+		{
+			name: "mysql like filter",
+			args: args{
+				ctx:    context.Background(),
+				config: &mysqlConfig,
+			},
+		},
+		{
+			name: "postgresql like filter",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
+			},
+		},
+		{
+			name: "mssql like filter",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+			},
+		},
+	}
+
 	users []sql.Record = []sql.Record{
 		&records.User{
 			Name:         "John Doe",
@@ -227,30 +251,6 @@ func setupTestDatabase(t *testing.T, config *sqlfactory.Config) (sql.Database, f
 
 // TestGetByConditionEQ tests equality conditions
 func TestGetByConditionEQ(t *testing.T) {
-	tests := []testCase{
-		{
-			name: "mysql equality filter",
-			args: args{
-				ctx:    context.Background(),
-				config: &mysqlConfig,
-			},
-		},
-		{
-			name: "postgresql equality filter",
-			args: args{
-				ctx:    context.Background(),
-				config: &postgresqlConfig,
-			},
-		},
-		{
-			name: "mssql equality filter",
-			args: args{
-				ctx:    context.Background(),
-				config: &mssqlConfig,
-			},
-		},
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db, cleanup := setupTestDatabase(t, tt.args.config)
@@ -329,30 +329,6 @@ func TestGetByConditionEQ(t *testing.T) {
 
 // TestGetByConditionNEQ tests not-equal conditions
 func TestGetByConditionNEQ(t *testing.T) {
-	tests := []testCase{
-		{
-			name: "mysql not-equal filter",
-			args: args{
-				ctx:    context.Background(),
-				config: &mysqlConfig,
-			},
-		},
-		{
-			name: "postgresql not-equal filter",
-			args: args{
-				ctx:    context.Background(),
-				config: &postgresqlConfig,
-			},
-		},
-		{
-			name: "mssql not-equal filter",
-			args: args{
-				ctx:    context.Background(),
-				config: &mssqlConfig,
-			},
-		},
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db, cleanup := setupTestDatabase(t, tt.args.config)
@@ -409,6 +385,96 @@ func TestGetByConditionNEQ(t *testing.T) {
 			for _, user := range otherUsers.Users {
 				if user.Email == "john.doe@example.com" {
 					t.Errorf("found excluded user in results: %s", user.Email)
+				}
+			}
+		})
+	}
+}
+
+// TestGetByConditionLIKE tests LIKE conditions
+func TestGetByConditionLIKE(t *testing.T) {
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupTestDatabase(t, tt.args.config)
+			defer cleanup()
+
+			ctx := tt.args.ctx
+
+			// Test 1: Get users with names containing 'John'
+			johnUsers := &records.Users{}
+			err := db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "name",
+					Operator: sql.LIKE,
+					Value:    sql.NewValue("%John%"),
+				},
+			}, nil, johnUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users with 'John' in name: %v", err)
+			}
+
+			// check count of johnUsers
+			if len(johnUsers.Users) != 2 {
+				t.Errorf("expected 2 user, got %d", len(johnUsers.Users))
+			}
+
+			for _, user := range johnUsers.Users {
+				if !strings.Contains(user.Name, "John") {
+					t.Errorf("expected name containing 'John', got: %s", user.Name)
+				}
+			}
+
+			// check with indexed value
+			johnUsers = &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "name",
+					Operator: sql.LIKE,
+					Value:    sql.NewIndexedValue(0),
+				},
+			}, []any{"%John%"}, johnUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users with 'John' in name: %v", err)
+			}
+
+			if len(johnUsers.Users) != 2 {
+				t.Errorf("expected 2 user, got %d", len(johnUsers.Users))
+			}
+
+			for _, user := range johnUsers.Users {
+				if !strings.Contains(user.Name, "John") {
+					t.Errorf("expected name containing 'John', got: %s", user.Name)
+				}
+			}
+			// not like
+			notJohnUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Conditions: []sql.Condition{
+						{
+							Field:    "name",
+							Operator: sql.LIKE,
+							Value:    sql.NewValue("%John%"),
+						},
+					},
+					Operator: sql.NOT,
+				},
+			}, nil, notJohnUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users with not like 'John' in name: %v", err)
+			}
+
+			if len(notJohnUsers.Users) != 18 {
+				t.Errorf("expected 18 user, got %d", len(notJohnUsers.Users))
+			}
+
+			for _, user := range notJohnUsers.Users {
+				if strings.Contains(user.Name, "John") {
+					t.Errorf("expected user with name not containing 'John', got: %s", user.Name)
 				}
 			}
 		})
