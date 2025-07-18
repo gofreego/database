@@ -480,3 +480,546 @@ func TestGetByConditionLIKE(t *testing.T) {
 		})
 	}
 }
+
+// TestGetByConditionIN tests IN conditions
+func TestGetByConditionIN(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupTestDatabase(t, tt.args.config)
+			defer cleanup()
+
+			ctx := tt.args.ctx
+
+			// Test 1: Get users with specific names
+			specificUsers := &records.Users{}
+			err := db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "name",
+					Operator: sql.IN,
+					Value:    sql.NewValue([]any{"John Doe", "Jane Smith", "Michael Johnson"}),
+				},
+			}, nil, specificUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users with specific names: %v", err)
+			}
+
+			if len(specificUsers.Users) != 3 {
+				t.Errorf("expected 3 users, got %d", len(specificUsers.Users))
+			}
+
+			expectedNames := map[string]bool{
+				"John Doe":        true,
+				"Jane Smith":      true,
+				"Michael Johnson": true,
+			}
+
+			for _, user := range specificUsers.Users {
+				if !expectedNames[user.Name] {
+					t.Errorf("unexpected user name: %s", user.Name)
+				}
+			}
+
+			// Test 2: Get users with specific active status
+			activeStatusUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "is_active",
+					Operator: sql.IN,
+					Value:    sql.NewValue([]any{0, 1}),
+				},
+			}, nil, activeStatusUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users with specific active status: %v", err)
+			}
+
+			if len(activeStatusUsers.Users) != 20 {
+				t.Errorf("expected 20 users (all users), got %d", len(activeStatusUsers.Users))
+			}
+
+			// Test 4: NOT IN operator
+			notInUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Conditions: []sql.Condition{
+						{
+							Field:    "name",
+							Operator: sql.IN,
+							Value:    sql.NewValue([]any{"John Doe", "Jane Smith"}),
+						},
+					},
+					Operator: sql.NOT,
+				},
+			}, nil, notInUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users NOT in specific names: %v", err)
+			}
+
+			if len(notInUsers.Users) != 18 {
+				t.Errorf("expected 18 users (excluding John Doe and Jane Smith), got %d", len(notInUsers.Users))
+			}
+
+			for _, user := range notInUsers.Users {
+				if user.Name == "John Doe" || user.Name == "Jane Smith" {
+					t.Errorf("found excluded user in results: %s", user.Name)
+				}
+			}
+
+		})
+	}
+}
+
+// TestGetByConditionBETWEEN tests BETWEEN conditions
+func TestGetByConditionBETWEEN(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupTestDatabase(t, tt.args.config)
+			defer cleanup()
+
+			ctx := tt.args.ctx
+
+			// Test 1: Get users created in first week of January 2022
+			earlyUsers := &records.Users{}
+			err := db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "created_at",
+					Operator: sql.BETWEEN,
+					Value:    sql.NewValue([]any{int64(1640995200000), int64(1641513600000)}), // Jan 1-7, 2022
+				},
+			}, nil, earlyUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get early users: %v", err)
+			}
+
+			// Should have users created in first week
+			if len(earlyUsers.Users) < 1 {
+				t.Errorf("expected at least 1 early user, got %d", len(earlyUsers.Users))
+			}
+
+			for _, user := range earlyUsers.Users {
+				if user.CreatedAt < 1640995200000 || user.CreatedAt > 1641513600000 {
+					t.Errorf("user created_at %d is outside expected range", user.CreatedAt)
+				}
+			}
+
+			// Test 2: Get users with IDs between 5 and 15
+			midUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "id",
+					Operator: sql.BETWEEN,
+					Value:    sql.NewValue([]any{int64(5), int64(15)}),
+				},
+			}, nil, midUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get mid-range users: %v", err)
+			}
+
+			// Should have users with IDs 5-15
+			if len(midUsers.Users) < 1 {
+				t.Errorf("expected at least 1 mid-range user, got %d", len(midUsers.Users))
+			}
+
+			for _, user := range midUsers.Users {
+				if user.Id < 5 || user.Id > 15 {
+					t.Errorf("user ID %d is outside expected range 5-15", user.Id)
+				}
+			}
+
+			// Test 3: NOT BETWEEN operator
+			notBetweenUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Conditions: []sql.Condition{
+						{
+							Field:    "id",
+							Operator: sql.BETWEEN,
+							Value:    sql.NewValue([]any{int64(5), int64(15)}),
+						},
+					},
+					Operator: sql.NOT,
+				},
+			}, nil, notBetweenUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users NOT between IDs 5-15: %v", err)
+			}
+
+			for _, user := range notBetweenUsers.Users {
+				if user.Id >= 5 && user.Id <= 15 {
+					t.Errorf("found user with ID %d in excluded range 5-15", user.Id)
+				}
+			}
+		})
+	}
+}
+
+// TestGetWithSorting tests sorting functionality
+func TestGetWithSorting(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupTestDatabase(t, tt.args.config)
+			defer cleanup()
+
+			ctx := tt.args.ctx
+
+			// Test 1: Sort by name ascending
+			sortedByName := &records.Users{}
+			err := db.Get(ctx, &sql.Filter{
+				Sort: sql.NewSort().Add("name", sql.Asc),
+			}, nil, sortedByName)
+
+			if err != nil {
+				t.Fatalf("failed to get users sorted by name: %v", err)
+			}
+
+			if len(sortedByName.Users) < 2 {
+				t.Fatalf("need at least 2 users to test sorting")
+			}
+
+			// Verify ascending order
+			for i := 1; i < len(sortedByName.Users); i++ {
+				if sortedByName.Users[i-1].Name > sortedByName.Users[i].Name {
+					t.Errorf("names not in ascending order: %s > %s",
+						sortedByName.Users[i-1].Name, sortedByName.Users[i].Name)
+				}
+			}
+
+			// Test 2: Sort by created_at descending
+			sortedByDate := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Sort: sql.NewSort().Add("created_at", sql.Desc),
+			}, nil, sortedByDate)
+
+			if err != nil {
+				t.Fatalf("failed to get users sorted by created_at: %v", err)
+			}
+
+			if len(sortedByDate.Users) < 2 {
+				t.Fatalf("need at least 2 users to test sorting")
+			}
+
+			// Verify descending order
+			for i := 1; i < len(sortedByDate.Users); i++ {
+				if sortedByDate.Users[i-1].CreatedAt < sortedByDate.Users[i].CreatedAt {
+					t.Errorf("created_at not in descending order: %d < %d",
+						sortedByDate.Users[i-1].CreatedAt, sortedByDate.Users[i].CreatedAt)
+				}
+			}
+
+			// Test 3: Multi-field sorting (is_active DESC, name ASC)
+			multiSorted := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Sort: sql.NewSort().
+					Add("is_active", sql.Desc).
+					Add("name", sql.Asc),
+			}, nil, multiSorted)
+
+			if err != nil {
+				t.Fatalf("failed to get users with multi-field sorting: %v", err)
+			}
+
+			if len(multiSorted.Users) < 2 {
+				t.Fatalf("need at least 2 users to test multi-field sorting")
+			}
+
+			// Verify multi-field sorting logic
+			for i := 1; i < len(multiSorted.Users); i++ {
+				prev := multiSorted.Users[i-1]
+				curr := multiSorted.Users[i]
+
+				// If is_active is different, it should be in descending order
+				if prev.IsActive != curr.IsActive {
+					if prev.IsActive < curr.IsActive {
+						t.Errorf("is_active not in descending order: %d < %d", prev.IsActive, curr.IsActive)
+					}
+				} else {
+					// If is_active is same, name should be in ascending order
+					if prev.Name > curr.Name {
+						t.Errorf("names not in ascending order when is_active is same: %s > %s",
+							prev.Name, curr.Name)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestGetWithPagination tests pagination functionality
+func TestGetWithPagination(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupTestDatabase(t, tt.args.config)
+			defer cleanup()
+
+			ctx := tt.args.ctx
+
+			// Test 1: Limit results
+			limitedUsers := &records.Users{}
+			err := db.Get(ctx, &sql.Filter{
+				Limit: sql.NewValue(int64(5)),
+			}, nil, limitedUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get limited users: %v", err)
+			}
+
+			if len(limitedUsers.Users) != 5 {
+				t.Errorf("expected 5 users with limit, got %d", len(limitedUsers.Users))
+			}
+
+			// Test 2: Offset results (only test with databases that support it)
+			// MySQL requires LIMIT with OFFSET, so we'll test that combination
+			offsetUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Limit:  sql.NewValue(int64(10)),
+				Offset: sql.NewValue(int64(10)),
+			}, nil, offsetUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get offset users: %v", err)
+			}
+
+			// Should have users after offset (up to limit)
+			if len(offsetUsers.Users) > 10 {
+				t.Errorf("expected at most 10 users with limit and offset, got %d", len(offsetUsers.Users))
+			}
+
+			// Test 3: Limit and offset together
+			paginatedUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Limit:  sql.NewValue(int64(3)),
+				Offset: sql.NewValue(int64(5)),
+			}, nil, paginatedUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get paginated users: %v", err)
+			}
+
+			if len(paginatedUsers.Users) != 3 {
+				t.Errorf("expected 3 users with limit and offset, got %d", len(paginatedUsers.Users))
+			}
+
+			// Test 4: Pagination with sorting
+			sortedPaginatedUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Sort:   sql.NewSort().Add("name", sql.Asc),
+				Limit:  sql.NewValue(int64(4)),
+				Offset: sql.NewValue(int64(8)),
+			}, nil, sortedPaginatedUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get sorted paginated users: %v", err)
+			}
+
+			if len(sortedPaginatedUsers.Users) != 4 {
+				t.Errorf("expected 4 users with sorted pagination, got %d", len(sortedPaginatedUsers.Users))
+			}
+
+			// Verify the results are sorted
+			for i := 1; i < len(sortedPaginatedUsers.Users); i++ {
+				if sortedPaginatedUsers.Users[i-1].Name > sortedPaginatedUsers.Users[i].Name {
+					t.Errorf("names not in ascending order: %s > %s",
+						sortedPaginatedUsers.Users[i-1].Name, sortedPaginatedUsers.Users[i].Name)
+				}
+			}
+		})
+	}
+}
+
+// TestGetWithComplexConditions tests complex query combinations
+func TestGetWithComplexConditions(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupTestDatabase(t, tt.args.config)
+			defer cleanup()
+
+			ctx := tt.args.ctx
+
+			// Test 1: Active users with bcrypt password hashes
+			activeBcryptUsers := &records.Users{}
+			err := db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Conditions: []sql.Condition{
+						{
+							Field:    "is_active",
+							Operator: sql.EQ,
+							Value:    sql.NewValue(1),
+						},
+						{
+							Field:    "password_hash",
+							Operator: sql.LIKE,
+							Value:    sql.NewValue("bcrypt_hash_%"),
+						},
+					},
+					Operator: sql.AND,
+				},
+			}, nil, activeBcryptUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get active bcrypt users: %v", err)
+			}
+
+			// Verify all returned users are active and have bcrypt hashes
+			for _, user := range activeBcryptUsers.Users {
+				if user.IsActive != 1 {
+					t.Errorf("expected active user, got IsActive=%d", user.IsActive)
+				}
+				if !strings.HasPrefix(user.PasswordHash, "bcrypt_hash_") {
+					t.Errorf("expected bcrypt hash, got: %s", user.PasswordHash)
+				}
+			}
+
+			// Test 2: Users with specific names OR inactive status
+			namedOrInactiveUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Conditions: []sql.Condition{
+						{
+							Field:    "name",
+							Operator: sql.IN,
+							Value:    sql.NewValue([]any{"John Doe", "Jane Smith"}),
+						},
+						{
+							Field:    "is_active",
+							Operator: sql.EQ,
+							Value:    sql.NewValue(0),
+						},
+					},
+					Operator: sql.OR,
+				},
+			}, nil, namedOrInactiveUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get named or inactive users: %v", err)
+			}
+
+			// Verify all returned users match the OR condition
+			for _, user := range namedOrInactiveUsers.Users {
+				isNamed := user.Name == "John Doe" || user.Name == "Jane Smith"
+				isInactive := user.IsActive == 0
+				if !isNamed && !isInactive {
+					t.Errorf("user %s (active=%d) doesn't match OR condition", user.Name, user.IsActive)
+				}
+			}
+
+			// Test 3: Complex nested conditions
+			complexUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Conditions: []sql.Condition{
+						{
+							Field:    "is_active",
+							Operator: sql.EQ,
+							Value:    sql.NewValue(1),
+						},
+						{
+							Conditions: []sql.Condition{
+								{
+									Field:    "name",
+									Operator: sql.LIKE,
+									Value:    sql.NewValue("%John%"),
+								},
+								{
+									Field:    "email",
+									Operator: sql.LIKE,
+									Value:    sql.NewValue("%.com"),
+								},
+							},
+							Operator: sql.AND,
+						},
+					},
+					Operator: sql.AND,
+				},
+			}, nil, complexUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users with complex conditions: %v", err)
+			}
+
+			// Verify all returned users match the complex condition
+			for _, user := range complexUsers.Users {
+				if user.IsActive != 1 {
+					t.Errorf("expected active user, got IsActive=%d", user.IsActive)
+				}
+				if !strings.Contains(user.Name, "John") {
+					t.Errorf("expected name containing 'John', got: %s", user.Name)
+				}
+				if !strings.HasSuffix(user.Email, ".com") {
+					t.Errorf("expected email ending with .com, got: %s", user.Email)
+				}
+			}
+		})
+	}
+}
+
+// TestGetEdgeCases tests edge cases and boundary conditions
+func TestGetEdgeCases(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupTestDatabase(t, tt.args.config)
+			defer cleanup()
+
+			ctx := tt.args.ctx
+
+			// Test 1: Get non-existent user
+			nonExistentUsers := &records.Users{}
+			err := db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "email",
+					Operator: sql.EQ,
+					Value:    sql.NewValue("nonexistent@example.com"),
+				},
+			}, nil, nonExistentUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get non-existent user: %v", err)
+			}
+
+			if len(nonExistentUsers.Users) != 0 {
+				t.Errorf("expected 0 users for non-existent email, got %d", len(nonExistentUsers.Users))
+			}
+
+			// Test 2: Get all users without any filter
+			allUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{}, nil, allUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get all users: %v", err)
+			}
+
+			if len(allUsers.Users) != 20 {
+				t.Errorf("expected 20 users total, got %d", len(allUsers.Users))
+			}
+
+			// Test 6: Get users with exact timestamp match
+			exactTimeUsers := &records.Users{}
+			err = db.Get(ctx, &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "created_at",
+					Operator: sql.EQ,
+					Value:    sql.NewValue(int64(1640995200000)), // Jan 1, 2022 00:00:00
+				},
+			}, nil, exactTimeUsers)
+
+			if err != nil {
+				t.Fatalf("failed to get users with exact timestamp: %v", err)
+			}
+
+			// Should have at least one user created at that exact time
+			if len(exactTimeUsers.Users) < 1 {
+				t.Errorf("expected at least 1 user with exact timestamp, got %d", len(exactTimeUsers.Users))
+			}
+
+			for _, user := range exactTimeUsers.Users {
+				if user.CreatedAt != 1640995200000 {
+					t.Errorf("expected exact timestamp 1640995200000, got %d", user.CreatedAt)
+				}
+			}
+		})
+	}
+}

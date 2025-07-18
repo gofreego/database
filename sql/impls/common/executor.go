@@ -1,6 +1,7 @@
 package common
 
 import (
+	"context"
 	driver "database/sql"
 
 	"github.com/gofreego/database/sql"
@@ -20,8 +21,17 @@ type Parser interface {
 	ParseUpsertQuery(record sql.Record) (string, []any, error)
 }
 
+type DB interface {
+	Close() error
+	PingContext(ctx context.Context) error
+	PrepareContext(ctx context.Context, query string) (*driver.Stmt, error)
+	ExecContext(ctx context.Context, query string, args ...any) (driver.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*driver.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...any) *driver.Row
+}
+
 type Executor struct {
-	db                 *driver.DB
+	db                 DB
 	parser             Parser
 	preparedStatements internal.PreparedStatements
 }
