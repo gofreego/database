@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gofreego/database/sql/impls/common"
-	"github.com/gofreego/database/sql/impls/mssql/parser"
+	"github.com/gofreego/database/sql/impls/postgresql/parser"
 	_ "github.com/lib/pq"
 )
 
