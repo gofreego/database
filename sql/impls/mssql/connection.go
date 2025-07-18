@@ -31,7 +31,7 @@ type MssqlDatabase struct {
 	db     *driver.DB
 	parser common.Parser
 	*common.Executor
-	prepared internal.PreparedStatements
+	preparedStatements internal.PreparedStatements
 }
 
 func NewMssqlDatabase(ctx context.Context, config *Config) (*MssqlDatabase, error) {
@@ -40,9 +40,9 @@ func NewMssqlDatabase(ctx context.Context, config *Config) (*MssqlDatabase, erro
 		return nil, err
 	}
 	return &MssqlDatabase{
-		Executor: common.NewExecutor(conn, parser.NewParser()),
-		db:       conn,
-		parser:   parser.NewParser(),
-		prepared: internal.NewPreparedStatements(),
+		Executor:           common.NewExecutor(conn, parser.NewParser()),
+		db:                 conn,
+		parser:             parser.NewParser(),
+		preparedStatements: internal.NewPreparedStatements(),
 	}, nil
 }

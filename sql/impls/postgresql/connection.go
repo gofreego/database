@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofreego/database/sql/impls/common"
 	"github.com/gofreego/database/sql/impls/postgresql/parser"
+	"github.com/gofreego/database/sql/internal"
 	_ "github.com/lib/pq"
 )
 
@@ -19,6 +20,9 @@ type Config struct {
 }
 
 type PostgresqlDatabase struct {
+	db                 *sql.DB
+	parser             common.Parser
+	preparedStatements internal.PreparedStatements
 	*common.Executor
 }
 
@@ -35,7 +39,11 @@ func NewPostgresqlDatabase(ctx context.Context, config *Config) (*PostgresqlData
 	if err != nil {
 		return nil, err
 	}
+	parser := parser.NewParser()
 	return &PostgresqlDatabase{
-		Executor: common.NewExecutor(db, parser.NewParser()),
+		Executor:           common.NewExecutor(db, parser),
+		db:                 db,
+		parser:             parser,
+		preparedStatements: internal.NewPreparedStatements(),
 	}, nil
 }
