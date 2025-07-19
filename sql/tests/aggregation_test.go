@@ -378,3 +378,46 @@ func TestCountDistinct(t *testing.T) {
 		})
 	}
 }
+
+type resultSumDistinct struct {
+	Value []float64 `sql:"value"`
+	records.User
+}
+
+func (u *resultSumDistinct) Columns() []*sql.Field {
+	return []*sql.Field{
+		sql.SumOf(sql.DistinctOf(sql.NewField("score"))).As("value"),
+	}
+}
+func (u *resultSumDistinct) Scan(rows sql.Rows) error {
+	u.Value = make([]float64, 0)
+	for rows.Next() {
+		var value float64
+		if err := rows.Scan(&value); err != nil {
+			return err
+		}
+		u.Value = append(u.Value, value)
+	}
+	return nil
+}
+
+func TestSumDistinct(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, cleanup := setupAggregationTestDatabase(t, tt.args.config)
+			defer cleanup()
+			ctx := tt.args.ctx
+			res := &resultSumDistinct{}
+			err := db.Get(ctx, &sql.Filter{}, nil, res)
+			if err != nil {
+				t.Fatalf("failed to get users: %v", err)
+			}
+			if len(res.Value) != 1 {
+				t.Fatalf("expected 1 user, got %d", len(res.Value))
+			}
+			if res.Value[0] != 600 {
+				t.Fatalf("expected 600, got %f", res.Value[0])
+			}
+		})
+	}
+}
