@@ -257,6 +257,20 @@ type OrderBy struct {
 	Order Order  // The sort order (Asc or Desc)
 }
 
+func NewASCOrder(field string) *OrderBy {
+	return &OrderBy{
+		Field: field,
+		Order: Asc,
+	}
+}
+
+func NewDESCOrder(field string) *OrderBy {
+	return &OrderBy{
+		Field: field,
+		Order: Desc,
+	}
+}
+
 // Sort represents a collection of sort criteria.
 type Sort struct {
 	fields []OrderBy
@@ -382,6 +396,43 @@ type Condition struct {
 	Value      *Value      // The value to compare against
 	Operator   Operator    // The operator to apply (e.g., EQ, NEQ, GT, etc.)
 	Conditions []Condition // Nested conditions for AND/OR operations
+}
+
+func NewCondition(field string, operator Operator, value *Value) *Condition {
+	return &Condition{
+		Field:    field,
+		Operator: operator,
+		Value:    value,
+	}
+}
+
+func (c *Condition) And(c1 *Condition) *Condition {
+	if c.Operator == AND {
+		c.Conditions = append(c.Conditions, *c1)
+		return c
+	}
+	return &Condition{
+		Operator:   AND,
+		Conditions: []Condition{*c, *c1},
+	}
+}
+
+func (c *Condition) Or(c1 *Condition) *Condition {
+	if c.Operator == OR {
+		c.Conditions = append(c.Conditions, *c1)
+		return c
+	}
+	return &Condition{
+		Operator:   OR,
+		Conditions: []Condition{*c, *c1},
+	}
+}
+
+func NotOf(c *Condition) *Condition {
+	return &Condition{
+		Operator:   NOT,
+		Conditions: []Condition{*c},
+	}
 }
 
 // Validate checks if the condition is properly configured.
