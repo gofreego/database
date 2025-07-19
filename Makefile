@@ -36,7 +36,7 @@ view-coverage:
 	open -a "Google Chrome" coverage.html
 
 mock:
-	go generate ./...
+	mockery --all
 
 clean:
 	rm -f coverage.out
