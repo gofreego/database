@@ -55,3 +55,31 @@ func TestParseUpdateByIDQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestParseUpdateByIDQueryEdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		record  sql.Record
+		wantErr bool
+	}{
+		{
+			name:    "nil record",
+			record:  nil,
+			wantErr: true,
+		},
+		{
+			name:    "record with nil table",
+			record:  &mockNoTableRecord{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := prsr.ParseUpdateByIDQuery(tt.record)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseUpdateByIDQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

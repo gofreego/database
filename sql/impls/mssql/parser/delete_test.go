@@ -387,3 +387,67 @@ func TestParseSoftDeleteQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDeleteQueryEdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		table     *sql.Table
+		condition *sql.Condition
+		wantErr   bool
+	}{
+		{
+			name:      "nil table with condition",
+			table:     nil,
+			condition: &sql.Condition{Field: "id", Operator: sql.EQ, Value: sql.NewValue(1)},
+			wantErr:   true,
+		},
+		{
+			name:      "nil table with nil condition",
+			table:     nil,
+			condition: nil,
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parser := &parser{}
+			_, _, err := parser.ParseDeleteQuery(tt.table, tt.condition)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseDeleteQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestParseSoftDeleteQueryEdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		table     *sql.Table
+		condition *sql.Condition
+		wantErr   bool
+	}{
+		{
+			name:      "nil table with condition",
+			table:     nil,
+			condition: &sql.Condition{Field: "id", Operator: sql.EQ, Value: sql.NewValue(1)},
+			wantErr:   true,
+		},
+		{
+			name:      "nil table with nil condition",
+			table:     nil,
+			condition: nil,
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parser := &parser{}
+			_, _, err := parser.ParseSoftDeleteQuery(tt.table, tt.condition)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseSoftDeleteQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

@@ -80,3 +80,31 @@ func TestParseUpsertQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestParseUpsertQueryEdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		record  sql.Record
+		wantErr bool
+	}{
+		{
+			name:    "nil record",
+			record:  nil,
+			wantErr: true,
+		},
+		{
+			name:    "record with nil table",
+			record:  &mockNoTableRecord{},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := prsr.ParseUpsertQuery(tt.record)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseUpsertQuery() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

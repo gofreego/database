@@ -512,3 +512,85 @@ func Test_parseFilter(t *testing.T) {
 		})
 	}
 }
+
+func TestParseFilterEdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		filter    *sql.Filter
+		lastIndex int
+		wantErr   bool
+	}{
+		{
+			name: "filter with invalid condition",
+			filter: &sql.Filter{
+				Condition: &sql.Condition{
+					Field:    "id",
+					Operator: sql.EQ,
+					Value:    &sql.Value{Type: sql.Column, Value: 123}, // Invalid column value
+				},
+			},
+			lastIndex: 0,
+			wantErr:   true,
+		},
+		{
+			name: "filter with invalid limit",
+			filter: &sql.Filter{
+				Limit: &sql.Value{Value: "invalid"},
+			},
+			lastIndex: 0,
+			wantErr:   true,
+		},
+		{
+			name: "filter with invalid offset",
+			filter: &sql.Filter{
+				Offset: &sql.Value{Value: "invalid"},
+			},
+			lastIndex: 0,
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := parseFilter(tt.filter, &tt.lastIndex)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseFilter() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestParseOrderByEdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		sort      *sql.Sort
+		lastIndex int
+		want      string
+	}{
+		{
+			name:      "nil sort",
+			sort:      nil,
+			lastIndex: 0,
+			want:      "",
+		},
+		{
+			name:      "empty sort fields",
+			sort:      &sql.Sort{},
+			lastIndex: 0,
+			want:      "ORDER BY ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseOrderBy(tt.sort)
+			if err != nil {
+				t.Errorf("parseOrderBy() unexpected error = %v", err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("parseOrderBy() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
