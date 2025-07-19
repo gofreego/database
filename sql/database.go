@@ -126,59 +126,6 @@ type Database interface {
 	Delete(ctx context.Context, table *Table, condition *Condition, values []any, options ...Options) (int64, error)
 }
 
-// Table represents a database table with optional joins.
-// It's used for building complex queries with multiple table joins.
-type Table struct {
-	Name  string // The name of the table
-	Alias string // Optional alias for the table
-	Join  []Join // List of joins with other tables
-}
-
-// NewTable creates a new Table instance with the given name.
-// The name should be the actual table name in the database.
-func NewTable(name string) *Table {
-	return &Table{
-		Name: name,
-		Join: make([]Join, 0),
-	}
-}
-
-// WithInnerJoin adds an INNER JOIN to the table.
-// The on parameter specifies the join condition.
-// Returns the table instance for method chaining.
-func (t *Table) WithInnerJoin(table *Table, on *Condition) *Table {
-	t.Join = append(t.Join, Join{
-		Table: table,
-		On:    on,
-		Type:  InnerJoin,
-	})
-	return t
-}
-
-// WithLeftJoin adds a LEFT JOIN to the table.
-// The on parameter specifies the join condition.
-// Returns the table instance for method chaining.
-func (t *Table) WithLeftJoin(table *Table, on *Condition) *Table {
-	t.Join = append(t.Join, Join{
-		Table: table,
-		On:    on,
-		Type:  LeftJoin,
-	})
-	return t
-}
-
-// WithRightJoin adds a RIGHT JOIN to the table.
-// The on parameter specifies the join condition.
-// Returns the table instance for method chaining.
-func (t *Table) WithRightJoin(table *Table, on *Condition) *Table {
-	t.Join = append(t.Join, Join{
-		Table: table,
-		On:    on,
-		Type:  RightJoin,
-	})
-	return t
-}
-
 // Row represents a single row from a database query result.
 // It provides a Scan method to extract values from the row.
 type Row interface {
@@ -241,6 +188,59 @@ type Records interface {
 	// Scan populates the records from a database result set.
 	// The rows parameter contains the result rows to scan.
 	Scan(rows Rows) error
+}
+
+// Table represents a database table with optional joins.
+// It's used for building complex queries with multiple table joins.
+type Table struct {
+	Name  string // The name of the table
+	Alias string // Optional alias for the table
+	Join  []Join // List of joins with other tables
+}
+
+// NewTable creates a new Table instance with the given name.
+// The name should be the actual table name in the database.
+func NewTable(name string) *Table {
+	return &Table{
+		Name: name,
+		Join: make([]Join, 0),
+	}
+}
+
+// WithInnerJoin adds an INNER JOIN to the table.
+// The on parameter specifies the join condition.
+// Returns the table instance for method chaining.
+func (t *Table) WithInnerJoin(table *Table, on *Condition) *Table {
+	t.Join = append(t.Join, Join{
+		Table: table,
+		On:    on,
+		Type:  InnerJoin,
+	})
+	return t
+}
+
+// WithLeftJoin adds a LEFT JOIN to the table.
+// The on parameter specifies the join condition.
+// Returns the table instance for method chaining.
+func (t *Table) WithLeftJoin(table *Table, on *Condition) *Table {
+	t.Join = append(t.Join, Join{
+		Table: table,
+		On:    on,
+		Type:  LeftJoin,
+	})
+	return t
+}
+
+// WithRightJoin adds a RIGHT JOIN to the table.
+// The on parameter specifies the join condition.
+// Returns the table instance for method chaining.
+func (t *Table) WithRightJoin(table *Table, on *Condition) *Table {
+	t.Join = append(t.Join, Join{
+		Table: table,
+		On:    on,
+		Type:  RightJoin,
+	})
+	return t
 }
 
 // Order represents the sort order for a field.

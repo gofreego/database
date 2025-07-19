@@ -179,3 +179,35 @@ func TestNewInvalidQueryError(t *testing.T) {
 		})
 	}
 }
+
+func TestError_IsQueryError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  *Error
+		want bool
+	}{
+		{
+			name: "query error",
+			err:  &Error{code: ErrCodeInvalidQuery},
+			want: true,
+		},
+		{
+			name: "not query error",
+			err:  &Error{code: ErrCodeNoRecordFound},
+			want: false,
+		},
+		{
+			name: "database error",
+			err:  &Error{code: ErrUnknownDatabaseError},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.err.IsQueryError(); got != tt.want {
+				t.Errorf("Error.IsQueryError() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
