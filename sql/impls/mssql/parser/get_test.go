@@ -127,7 +127,7 @@ func TestParseGetByFilterQuery(t *testing.T) {
 				},
 				records: &records.Users{},
 			},
-			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE (email = @p1 AND is_active = 1 AND name LIKE @p2) GROUP BY (is_active) ORDER BY created_at DESC LIMIT 10 OFFSET @p3",
+			want:    "SELECT id, name, email, password_hash, is_active, created_at, updated_at FROM users WHERE (email = @p1 AND is_active = 1 AND name LIKE @p2) GROUP BY (is_active) ORDER BY created_at DESC OFFSET @p3 ROWS FETCH NEXT 10 ROWS ONLY",
 			want1:   []int{0, 2, 1},
 			wantErr: false,
 		},

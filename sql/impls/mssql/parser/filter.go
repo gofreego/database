@@ -40,31 +40,41 @@ func parseFilter(filter *sql.Filter, lastIndex *int) (string, []int, error) {
 		filterStrings = append(filterStrings, orderBy)
 	}
 	// limit
-	if filter.Limit != nil {
-		if filter.Limit.Value != nil {
-			if v, ok := filter.Limit.Value.(int64); ok && v > 0 {
-				filterStrings = append(filterStrings, fmt.Sprintf("LIMIT %d", v))
-			} else {
-				return "", nil, fmt.Errorf("invalid limit value: %v, expected int/int64 and greater than zero", filter.Limit.Value)
-			}
-		} else {
-			*lastIndex++
-			filterStrings = append(filterStrings, fmt.Sprintf("LIMIT @p%d", *lastIndex))
-			filterValues = append(filterValues, filter.Limit.Index)
+	if filter.Limit != nil || filter.Offset != nil {
+		if orderBy == "" {
+			filterStrings = append(filterStrings, "ORDER BY (SELECT NULL)")
 		}
-	}
-	// offset
-	if filter.Offset != nil {
-		if filter.Offset.Value != nil {
-			if v, ok := filter.Offset.Value.(int64); ok && v >= 0 {
-				filterStrings = append(filterStrings, fmt.Sprintf("OFFSET %d", v))
+		// offset
+		if filter.Offset != nil {
+			if filter.Offset.Value != nil {
+				if v, ok := filter.Offset.Value.(int64); ok && v >= 0 {
+					filterStrings = append(filterStrings, fmt.Sprintf("OFFSET %d ROWS", v))
+				} else {
+					return "", nil, fmt.Errorf("invalid offset value: %v, expected int/int64 and greater than or equal to zero", filter.Offset.Value)
+				}
 			} else {
-				return "", nil, fmt.Errorf("invalid offset value: %v, expected int/int64 and greater than or equal to zero", filter.Offset.Value)
+				*lastIndex++
+				filterStrings = append(filterStrings, fmt.Sprintf("OFFSET @p%d ROWS", *lastIndex))
+				filterValues = append(filterValues, filter.Offset.Index)
 			}
 		} else {
-			*lastIndex++
-			filterStrings = append(filterStrings, fmt.Sprintf("OFFSET @p%d", *lastIndex))
-			filterValues = append(filterValues, filter.Offset.Index)
+			filterStrings = append(filterStrings, "OFFSET 0 ROWS")
+		}
+
+		if filter.Limit != nil {
+			if filter.Limit.Value != nil {
+				if v, ok := filter.Limit.Value.(int64); ok && v > 0 {
+					filterStrings = append(filterStrings, fmt.Sprintf("FETCH NEXT %d ROWS ONLY", v))
+				} else {
+					return "", nil, fmt.Errorf("invalid limit value: %v, expected int/int64 and greater than zero", filter.Limit.Value)
+				}
+			} else {
+				*lastIndex++
+				filterStrings = append(filterStrings, fmt.Sprintf("FETCH NEXT @p%d ROWS ONLY", *lastIndex))
+				filterValues = append(filterValues, filter.Limit.Index)
+			}
+		} else {
+			filterStrings = append(filterStrings, "FETCH NEXT 10 ROWS ONLY")
 		}
 	}
 

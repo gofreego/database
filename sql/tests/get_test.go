@@ -18,21 +18,21 @@ This covers all the different ways that a get query can be constructed and execu
 var (
 	tests = []testCase{
 		{
-			name: "mysql like filter",
+			name: "mysql",
 			args: args{
 				ctx:    context.Background(),
 				config: &mysqlConfig,
 			},
 		},
 		{
-			name: "postgresql like filter",
+			name: "postgresql",
 			args: args{
 				ctx:    context.Background(),
 				config: &postgresqlConfig,
 			},
 		},
 		{
-			name: "mssql like filter",
+			name: "mssql",
 			args: args{
 				ctx:    context.Background(),
 				config: &mssqlConfig,
