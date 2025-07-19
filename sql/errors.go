@@ -39,6 +39,9 @@ var (
 
 // only if its a unknown error
 func NewDatabaseError(err error) error {
+	if err == nil {
+		return nil
+	}
 	return &Error{
 		message: err.Error(),
 		code:    ErrUnknownDatabaseError,
