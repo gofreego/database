@@ -205,14 +205,14 @@ var (
 )
 
 // generateTestData inserts the test users into the database
-func generateTestData(db sql.Database) error {
-	noOfInserted, err := db.InsertMany(context.Background(), users, sql.Options{})
+func generateTestData(db sql.Database, data []sql.Record) error {
+	noOfInserted, err := db.InsertMany(context.Background(), data, sql.Options{})
 	if err != nil {
 		return fmt.Errorf("failed to insert test data: %w", err)
 	}
 
-	if noOfInserted != int64(len(users)) {
-		return fmt.Errorf("expected %d records to be inserted, got %d", len(users), noOfInserted)
+	if noOfInserted != int64(len(data)) {
+		return fmt.Errorf("expected %d records to be inserted, got %d", len(data), noOfInserted)
 	}
 	return nil
 }
@@ -236,7 +236,7 @@ func setupTestDatabase(t *testing.T, config *sqlfactory.Config) (sql.Database, f
 	}
 
 	// Insert test data
-	if err := generateTestData(db); err != nil {
+	if err := generateTestData(db, users); err != nil {
 		t.Fatalf("failed to generate test data: %v", err)
 	}
 

@@ -85,6 +85,12 @@ func parseField(field *sql.Field) string {
 	}
 	if field.Field != nil {
 		res := parseField(field.Field)
+		if field.Distinct {
+			res = "DISTINCT " + res
+		}
+		if field.Func != sql.None {
+			res = fmt.Sprintf("%s(%s)", aggregateFuncMap[field.Func], res)
+		}
 		if field.Alias != "" {
 			res += " AS " + field.Alias
 		}
