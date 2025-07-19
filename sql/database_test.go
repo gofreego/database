@@ -736,3 +736,573 @@ func TestGetOptions(t *testing.T) {
 		})
 	}
 }
+
+func TestNewASCOrder(t *testing.T) {
+	tests := []struct {
+		name  string
+		field string
+		want  *OrderBy
+	}{
+		{
+			name:  "create ASC order",
+			field: "name",
+			want: &OrderBy{
+				Field: "name",
+				Order: Asc,
+			},
+		},
+		{
+			name:  "create ASC order with empty field",
+			field: "",
+			want: &OrderBy{
+				Field: "",
+				Order: Asc,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewASCOrder(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewASCOrder() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewDESCOrder(t *testing.T) {
+	tests := []struct {
+		name  string
+		field string
+		want  *OrderBy
+	}{
+		{
+			name:  "create DESC order",
+			field: "created_at",
+			want: &OrderBy{
+				Field: "created_at",
+				Order: Desc,
+			},
+		},
+		{
+			name:  "create DESC order with empty field",
+			field: "",
+			want: &OrderBy{
+				Field: "",
+				Order: Desc,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewDESCOrder(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewDESCOrder() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewCondition(t *testing.T) {
+	tests := []struct {
+		name     string
+		field    string
+		operator Operator
+		value    *Value
+		want     *Condition
+	}{
+		{
+			name:     "create EQ condition",
+			field:    "name",
+			operator: EQ,
+			value:    NewValue("test"),
+			want: &Condition{
+				Field:    "name",
+				Operator: EQ,
+				Value:    NewValue("test"),
+			},
+		},
+		{
+			name:     "create ISNULL condition",
+			field:    "deleted_at",
+			operator: ISNULL,
+			value:    nil,
+			want: &Condition{
+				Field:    "deleted_at",
+				Operator: ISNULL,
+				Value:    nil,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewCondition(tt.field, tt.operator, tt.value)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewCondition() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCondition_And(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition *Condition
+		other     *Condition
+		want      *Condition
+	}{
+		{
+			name: "AND with existing AND condition",
+			condition: &Condition{
+				Operator: AND,
+				Conditions: []Condition{
+					{Field: "name", Operator: EQ, Value: NewValue("test")},
+				},
+			},
+			other: &Condition{Field: "age", Operator: GT, Value: NewValue(18)},
+			want: &Condition{
+				Operator: AND,
+				Conditions: []Condition{
+					{Field: "name", Operator: EQ, Value: NewValue("test")},
+					{Field: "age", Operator: GT, Value: NewValue(18)},
+				},
+			},
+		},
+		{
+			name:      "AND with non-AND condition",
+			condition: &Condition{Field: "name", Operator: EQ, Value: NewValue("test")},
+			other:     &Condition{Field: "age", Operator: GT, Value: NewValue(18)},
+			want: &Condition{
+				Operator: AND,
+				Conditions: []Condition{
+					{Field: "name", Operator: EQ, Value: NewValue("test")},
+					{Field: "age", Operator: GT, Value: NewValue(18)},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.condition.And(tt.other)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Condition.And() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCondition_Or(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition *Condition
+		other     *Condition
+		want      *Condition
+	}{
+		{
+			name: "OR with existing OR condition",
+			condition: &Condition{
+				Operator: OR,
+				Conditions: []Condition{
+					{Field: "name", Operator: EQ, Value: NewValue("test")},
+				},
+			},
+			other: &Condition{Field: "email", Operator: EQ, Value: NewValue("test@example.com")},
+			want: &Condition{
+				Operator: OR,
+				Conditions: []Condition{
+					{Field: "name", Operator: EQ, Value: NewValue("test")},
+					{Field: "email", Operator: EQ, Value: NewValue("test@example.com")},
+				},
+			},
+		},
+		{
+			name:      "OR with non-OR condition",
+			condition: &Condition{Field: "name", Operator: EQ, Value: NewValue("test")},
+			other:     &Condition{Field: "email", Operator: EQ, Value: NewValue("test@example.com")},
+			want: &Condition{
+				Operator: OR,
+				Conditions: []Condition{
+					{Field: "name", Operator: EQ, Value: NewValue("test")},
+					{Field: "email", Operator: EQ, Value: NewValue("test@example.com")},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.condition.Or(tt.other)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Condition.Or() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNotOf(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition *Condition
+		want      *Condition
+	}{
+		{
+			name:      "NOT condition",
+			condition: &Condition{Field: "deleted", Operator: EQ, Value: NewValue(true)},
+			want: &Condition{
+				Operator: NOT,
+				Conditions: []Condition{
+					{Field: "deleted", Operator: EQ, Value: NewValue(true)},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NotOf(tt.condition)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NotOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewField(t *testing.T) {
+	tests := []struct {
+		name string
+		want *Field
+	}{
+		{
+			name: "create new field",
+			want: &Field{
+				Name:     "test_field",
+				Field:    nil,
+				Alias:    "",
+				Distinct: false,
+				Func:     None,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewField("test_field")
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewField() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestField_As(t *testing.T) {
+	tests := []struct {
+		name  string
+		field *Field
+		alias string
+		want  *Field
+	}{
+		{
+			name:  "add alias to field",
+			field: NewField("name"),
+			alias: "user_name",
+			want: &Field{
+				Name:     "name",
+				Field:    nil,
+				Alias:    "user_name",
+				Distinct: false,
+				Func:     None,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.field.As(tt.alias)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Field.As() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCountOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		field *Field
+		want  *Field
+	}{
+		{
+			name:  "count of field",
+			field: NewField("id"),
+			want: &Field{
+				Name:     "",
+				Field:    NewField("id"),
+				Alias:    "",
+				Distinct: false,
+				Func:     Count,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CountOf(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CountOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSumOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		field *Field
+		want  *Field
+	}{
+		{
+			name:  "sum of field",
+			field: NewField("amount"),
+			want: &Field{
+				Name:     "",
+				Field:    NewField("amount"),
+				Alias:    "",
+				Distinct: false,
+				Func:     Sum,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SumOf(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SumOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAvgOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		field *Field
+		want  *Field
+	}{
+		{
+			name:  "average of field",
+			field: NewField("score"),
+			want: &Field{
+				Name:     "",
+				Field:    NewField("score"),
+				Alias:    "",
+				Distinct: false,
+				Func:     Avg,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := AvgOf(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AvgOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMinOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		field *Field
+		want  *Field
+	}{
+		{
+			name:  "minimum of field",
+			field: NewField("price"),
+			want: &Field{
+				Name:     "",
+				Field:    NewField("price"),
+				Alias:    "",
+				Distinct: false,
+				Func:     Min,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MinOf(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MinOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMaxOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		field *Field
+		want  *Field
+	}{
+		{
+			name:  "maximum of field",
+			field: NewField("price"),
+			want: &Field{
+				Name:     "",
+				Field:    NewField("price"),
+				Alias:    "",
+				Distinct: false,
+				Func:     Max,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MaxOf(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MaxOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDistinctOf(t *testing.T) {
+	tests := []struct {
+		name  string
+		field *Field
+		want  *Field
+	}{
+		{
+			name:  "distinct of field",
+			field: NewField("category"),
+			want: &Field{
+				Name:     "",
+				Field:    NewField("category"),
+				Alias:    "",
+				Distinct: true,
+				Func:     None,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DistinctOf(tt.field)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DistinctOf() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUnimplementedRecord_ID(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "ID method is not implemented" {
+			t.Errorf("Expected panic message 'ID method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.ID()
+}
+
+func TestUnimplementedRecord_IdColumn(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "IdColumn method is not implemented" {
+			t.Errorf("Expected panic message 'IdColumn method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.IdColumn()
+}
+
+func TestUnimplementedRecord_SetID(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "SetID method is not implemented" {
+			t.Errorf("Expected panic message 'SetID method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.SetID(1)
+}
+
+func TestUnimplementedRecord_Table(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "Table method is not implemented" {
+			t.Errorf("Expected panic message 'Table method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.Table()
+}
+
+func TestUnimplementedRecord_Columns(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "Columns method is not implemented" {
+			t.Errorf("Expected panic message 'Columns method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.Columns()
+}
+
+func TestUnimplementedRecord_Values(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "Values method is not implemented" {
+			t.Errorf("Expected panic message 'Values method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.Values()
+}
+
+func TestUnimplementedRecord_Scan(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "Scan method is not implemented" {
+			t.Errorf("Expected panic message 'Scan method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.Scan(nil)
+}
+
+func TestUnimplementedRecord_SetDeleted(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic, but no panic occurred")
+		} else if r != "SetDeleted method is not implemented" {
+			t.Errorf("Expected panic message 'SetDeleted method is not implemented', got '%v'", r)
+		}
+	}()
+
+	record := &UnimplementedRecord{}
+	record.SetDeleted(true)
+}

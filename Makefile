@@ -20,8 +20,6 @@ wait-for-dbs:
 # To run the test cases and generate coverage file
 test-static:
 	go test -v -count=1 -cover -coverprofile=coverage.out ./sql ./sql/impls/... ./sql/migrator ./sql/sqlfactory ./sql/internal | grep -E "(coverage|FAIL)"
-	go tool cover -func=coverage.out
-	go tool cover -html=coverage.out -o coverage.html
 
 test:
 	make setup-db-up
