@@ -30,7 +30,7 @@ func TestParseUpdateByIDQuery(t *testing.T) {
 					UpdatedAt:    456,
 				},
 			},
-			want:    "UPDATE users SET name = ?, email = ?, password_hash = ?, is_active = ?, created_at = ?, updated_at = ? WHERE id = ?",
+			want:    "UPDATE users SET name = ?, email = ?, password_hash = ?, score = ?, is_active = ?, created_at = ?, updated_at = ? WHERE id = ?",
 			wantErr: false,
 		},
 		{

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    score INT DEFAULT 0,
     is_active TINYINT(1) DEFAULT 1,
     created_at BIGINT DEFAULT 0,
     updated_at BIGINT DEFAULT 0

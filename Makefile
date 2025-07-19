@@ -17,8 +17,8 @@ test-static:
 
 test:
 	make setup-db-up
-	echo "waiting 5 seconds for db to be up and running"
-	sleep 5
+	echo "waiting 10 seconds for db to be up and running"
+	sleep 10
 	go test -v -count=1 -cover -coverprofile=coverage.out ./... | grep -E "(coverage|FAIL)"
 	go tool cover -func=coverage.out
 	go tool cover -html=coverage.out -o coverage.html

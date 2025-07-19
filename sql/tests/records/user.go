@@ -7,6 +7,7 @@ type User struct {
 	Name         string `sql:"name"`
 	Email        string `sql:"email"`
 	PasswordHash string `sql:"password_hash"`
+	Score        int    `sql:"score"`
 	IsActive     int    `sql:"is_active"`
 	CreatedAt    int64  `sql:"created_at"`
 	UpdatedAt    int64  `sql:"updated_at"`
@@ -24,6 +25,7 @@ func (u *User) Columns() []*sql.Field {
 		sql.NewField("name"),
 		sql.NewField("email"),
 		sql.NewField("password_hash"),
+		sql.NewField("score"),
 		sql.NewField("is_active"),
 		sql.NewField("created_at"),
 		sql.NewField("updated_at"),
@@ -37,7 +39,7 @@ func (u *User) ID() int64 {
 
 // Scan implements sql.Record.
 func (u *User) Scan(row sql.Row) error {
-	return row.Scan(&u.Id, &u.Name, &u.Email, &u.PasswordHash, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
+	return row.Scan(&u.Id, &u.Name, &u.Email, &u.PasswordHash, &u.Score, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
 }
 
 // SetID implements sql.Record.
@@ -52,7 +54,7 @@ func (u *User) Table() *sql.Table {
 
 // Values implements sql.Record.
 func (u *User) Values() []any {
-	return []any{u.Name, u.Email, u.PasswordHash, u.IsActive, u.CreatedAt, u.UpdatedAt}
+	return []any{u.Name, u.Email, u.PasswordHash, u.Score, u.IsActive, u.CreatedAt, u.UpdatedAt}
 }
 
 type Users struct {

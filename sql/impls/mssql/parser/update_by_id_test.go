@@ -22,7 +22,7 @@ func TestParseUpdateByIDQuery(t *testing.T) {
 			args: args{
 				record: &records.User{Id: 1, Name: "Alice", Email: "alice@example.com", PasswordHash: "hash123", IsActive: 1, CreatedAt: 123456789, UpdatedAt: 987654321},
 			},
-			want:    "UPDATE users SET name = @p1, email = @p2, password_hash = @p3, is_active = @p4, created_at = @p5, updated_at = @p6 WHERE id = @p7",
+			want:    "UPDATE users SET name = @p1, email = @p2, password_hash = @p3, score = @p4, is_active = @p5, created_at = @p6, updated_at = @p7 WHERE id = @p8",
 			wantErr: false,
 		},
 		{

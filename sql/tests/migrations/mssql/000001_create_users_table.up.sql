@@ -10,6 +10,7 @@ CREATE TABLE users (
     email NVARCHAR(255) NOT NULL UNIQUE,
     password_hash NVARCHAR(255) NOT NULL,
     is_active INT DEFAULT 1,
+    score INT DEFAULT 0,
     created_at BIGINT DEFAULT 0,
     updated_at BIGINT DEFAULT 0
 );

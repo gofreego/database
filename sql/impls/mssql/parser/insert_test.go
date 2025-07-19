@@ -46,8 +46,8 @@ func TestParseInsertQuery(t *testing.T) {
 				Id: 1, Name: "Alice", Email: "alice@example.com", PasswordHash: "hash123",
 				IsActive: 1, CreatedAt: 123456789, UpdatedAt: 987654321,
 			}}},
-			want:    "INSERT INTO users (name, email, password_hash, is_active, created_at, updated_at) VALUES (@p1, @p2, @p3, @p4, @p5, @p6)",
-			want1:   []any{"Alice", "alice@example.com", "hash123", 1, int64(123456789), int64(987654321)},
+			want:    "INSERT INTO users (name, email, password_hash, score, is_active, created_at, updated_at) VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7)",
+			want1:   []any{"Alice", "alice@example.com", "hash123", 0, 1, int64(123456789), int64(987654321)},
 			wantErr: false,
 		},
 		{
@@ -56,8 +56,8 @@ func TestParseInsertQuery(t *testing.T) {
 				&records.User{Id: 1, Name: "Alice", Email: "alice@example.com", PasswordHash: "hash123", IsActive: 1, CreatedAt: 123456789, UpdatedAt: 987654321},
 				&records.User{Id: 2, Name: "Bob", Email: "bob@example.com", PasswordHash: "hash456", IsActive: 0, CreatedAt: 123456790, UpdatedAt: 987654322},
 			}},
-			want:    "INSERT INTO users (name, email, password_hash, is_active, created_at, updated_at) VALUES (@p1, @p2, @p3, @p4, @p5, @p6), (@p7, @p8, @p9, @p10, @p11, @p12)",
-			want1:   []any{"Alice", "alice@example.com", "hash123", 1, int64(123456789), int64(987654321), "Bob", "bob@example.com", "hash456", 0, int64(123456790), int64(987654322)},
+			want:    "INSERT INTO users (name, email, password_hash, score, is_active, created_at, updated_at) VALUES (@p1, @p2, @p3, @p4, @p5, @p6, @p7), (@p8, @p9, @p10, @p11, @p12, @p13, @p14)",
+			want1:   []any{"Alice", "alice@example.com", "hash123", 0, 1, int64(123456789), int64(987654321), "Bob", "bob@example.com", "hash456", 0, 0, int64(123456790), int64(987654322)},
 			wantErr: false,
 		},
 		{

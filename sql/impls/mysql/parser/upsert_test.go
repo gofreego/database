@@ -32,8 +32,8 @@ func TestParseUpsertQuery(t *testing.T) {
 					UpdatedAt:    456,
 				},
 			},
-			want:    "INSERT INTO users (name, email, password_hash, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), email = VALUES(email), password_hash = VALUES(password_hash), is_active = VALUES(is_active), created_at = VALUES(created_at), updated_at = VALUES(updated_at)",
-			want1:   []any{"Test", "test@example.com", "hash", 1, int64(123), int64(456)},
+			want:    "INSERT INTO users (name, email, password_hash, score, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), email = VALUES(email), password_hash = VALUES(password_hash), score = VALUES(score), is_active = VALUES(is_active), created_at = VALUES(created_at), updated_at = VALUES(updated_at)",
+			want1:   []any{"Test", "test@example.com", "hash", 0, 1, int64(123), int64(456)},
 			wantErr: false,
 		},
 		{
