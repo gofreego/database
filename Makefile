@@ -9,6 +9,14 @@ setup-db-up:
 setup-db-down:
 	docker-compose -f $(TEST_DB_COMPOSE_FILE) down
 
+# Wait for databases to be ready
+wait-for-dbs:
+	@echo "Waiting for databases to be ready..."
+	@until docker exec postgres_db pg_isready -U root -d postgres > /dev/null 2>&1; do echo "Waiting for PostgreSQL..."; sleep 2; done
+	@until docker exec mysql_db mysqladmin ping -h localhost -u root -proot@1234 > /dev/null 2>&1; do echo "Waiting for MySQL..."; sleep 2; done
+	@until docker exec mssql_db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P root@1234 -Q "SELECT 1" -C > /dev/null 2>&1; do echo "Waiting for MSSQL..."; sleep 2; done
+	@echo "All databases are ready!"
+
 # To run the test cases and generate coverage file
 test-static:
 	go test -v -count=1 -cover -coverprofile=coverage.out ./sql ./sql/impls/... ./sql/migrator ./sql/sqlfactory ./sql/internal | grep -E "(coverage|FAIL)"
@@ -17,8 +25,7 @@ test-static:
 
 test:
 	make setup-db-up
-	echo "waiting 10 seconds for db to be up and running"
-	sleep 10
+	make wait-for-dbs
 	go test -v -count=1 -cover -coverprofile=coverage.out ./... | grep -E "(coverage|FAIL)"
 	make setup-db-down
 
