@@ -16,30 +16,6 @@ This file contains comprehensive tests for the get functionality of the sql pack
 This covers all the different ways that a get query can be constructed and executed.
 */
 var (
-	tests = []testCase{
-		{
-			name: "mysql",
-			args: args{
-				ctx:    context.Background(),
-				config: &mysqlConfig,
-			},
-		},
-		{
-			name: "postgresql",
-			args: args{
-				ctx:    context.Background(),
-				config: &postgresqlConfig,
-			},
-		},
-		{
-			name: "mssql",
-			args: args{
-				ctx:    context.Background(),
-				config: &mssqlConfig,
-			},
-		},
-	}
-
 	users []sql.Record = []sql.Record{
 		&records.User{
 			Name:         "John Doe",

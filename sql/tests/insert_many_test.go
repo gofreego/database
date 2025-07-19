@@ -17,33 +17,6 @@ use `make setup-db` to start the database
 */
 
 func TestInsertMany(t *testing.T) {
-	tests := []testCase{
-		{
-			name: "mysql insert many users",
-			args: args{
-				ctx:    context.Background(),
-				config: &mysqlConfig,
-			},
-			wantErr: false,
-			pingErr: false,
-		},
-		{
-			name: "postgresql insert many users",
-			args: args{
-				ctx:    context.Background(),
-				config: &postgresqlConfig,
-			},
-			wantErr: false,
-			pingErr: false,
-		},
-		{
-			name: "mssql insert many users",
-			args: args{
-				ctx:    context.Background(),
-				config: &mssqlConfig,
-			},
-		},
-	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

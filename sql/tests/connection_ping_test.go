@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"context"
 	"testing"
 
 	"github.com/gofreego/database/sql/sqlfactory"
@@ -13,42 +12,6 @@ use `make setup-db` to start the database
 */
 
 func TestNewConnection(t *testing.T) {
-	type args struct {
-		ctx    context.Context
-		config *sqlfactory.Config
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-		pingErr bool
-	}{
-		{
-			name: "Ping Postgresql",
-			args: args{
-				ctx:    context.Background(),
-				config: &postgresqlConfig,
-			},
-			wantErr: false,
-			pingErr: false,
-		},
-		{
-			name: "Ping Mysql",
-			args: args{
-				ctx:    context.Background(),
-				config: &mysqlConfig,
-			},
-			wantErr: false,
-			pingErr: false,
-		},
-		{
-			name: "Ping MSSQL",
-			args: args{
-				ctx:    context.Background(),
-				config: &mssqlConfig,
-			},
-		},
-	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conn, err := sqlfactory.NewDatabase(tt.args.ctx, tt.args.config)

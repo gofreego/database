@@ -16,17 +16,6 @@ Note: please make sure the database is running before running the test
 use `make setup-db` to start the database
 */
 
-type args struct {
-	ctx    context.Context
-	config *sqlfactory.Config
-}
-type testCase struct {
-	name    string
-	args    args
-	wantErr bool
-	pingErr bool
-}
-
 func TestInsertAndGet(t *testing.T) {
 
 	tests := []testCase{

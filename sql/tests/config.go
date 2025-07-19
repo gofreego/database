@@ -1,11 +1,24 @@
 package tests
 
 import (
+	"context"
+
 	"github.com/gofreego/database/sql/impls/mssql"
 	"github.com/gofreego/database/sql/impls/mysql"
 	"github.com/gofreego/database/sql/impls/postgresql"
 	"github.com/gofreego/database/sql/sqlfactory"
 )
+
+type args struct {
+	ctx    context.Context
+	config *sqlfactory.Config
+}
+type testCase struct {
+	name    string
+	args    args
+	wantErr bool
+	pingErr bool
+}
 
 var (
 	mysqlConfig = sqlfactory.Config{
@@ -38,6 +51,30 @@ var (
 			User:     "sa",
 			Password: "root@1234",
 			Database: "master",
+		},
+	}
+
+	tests = []testCase{
+		{
+			name: "mysql",
+			args: args{
+				ctx:    context.Background(),
+				config: &mysqlConfig,
+			},
+		},
+		{
+			name: "postgresql",
+			args: args{
+				ctx:    context.Background(),
+				config: &postgresqlConfig,
+			},
+		},
+		{
+			name: "mssql",
+			args: args{
+				ctx:    context.Background(),
+				config: &mssqlConfig,
+			},
 		},
 	}
 )
