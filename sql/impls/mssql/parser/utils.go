@@ -25,14 +25,15 @@ func getPlaceHolders(count int, lastIndex *int) string {
 // It is used to create the column list in the SQL INSERT/UPSERT statement.
 // For example, if the record has columns ["id", "name", "email"],
 // it will return "name, email".
-func parseColumns(record sql.Record) string {
+func parseInsertColumns(record sql.Record) string {
 	columns := []string{}
 	idColumn := record.IdColumn()
 	for _, col := range record.Columns() {
-		if col == idColumn {
+		c := parseField(col)
+		if c == idColumn {
 			continue
 		}
-		columns = append(columns, col)
+		columns = append(columns, c)
 	}
 	return strings.Join(columns, ", ")
 }
@@ -49,4 +50,54 @@ func getValuesPlaceHolders(lastIndex *int, record ...sql.Record) (string, []any)
 		values = append(values, record[i].Values()...)
 	}
 	return strings.Join(valuesPlaceHolders, ", "), values
+}
+
+func parseColumns(fields []*sql.Field) string {
+	columnStrings := make([]string, len(fields))
+	for i, field := range fields {
+		columnStrings[i] = parseField(field)
+	}
+	return strings.Join(columnStrings, ", ")
+}
+
+var (
+	aggregateFuncMap = map[sql.AggregateFunc]string{
+		sql.Count: "COUNT",
+		sql.Sum:   "SUM",
+		sql.Avg:   "AVG",
+		sql.Min:   "MIN",
+		sql.Max:   "MAX",
+	}
+)
+
+// mssql parse field function
+// handles all the cases
+func parseField(field *sql.Field) string {
+	if field.Name != "" {
+		res := field.Name
+		if field.Distinct {
+			res = "DISTINCT " + res
+		}
+		if field.Func != sql.None {
+			res = fmt.Sprintf("%s(%s)", aggregateFuncMap[field.Func], res)
+		}
+		if field.Alias != "" {
+			res += " AS " + field.Alias
+		}
+		return res
+	}
+	if field.Field != nil {
+		res := parseField(field.Field)
+		if field.Distinct {
+			res = "DISTINCT " + res
+		}
+		if field.Func != sql.None {
+			res = fmt.Sprintf("%s(%s)", aggregateFuncMap[field.Func], res)
+		}
+		if field.Alias != "" {
+			res += " AS " + field.Alias
+		}
+		return res
+	}
+	return ""
 }

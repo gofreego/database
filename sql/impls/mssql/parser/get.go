@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/gofreego/database/sql"
 )
@@ -18,7 +17,7 @@ func (p *parser) ParseGetByIDQuery(record sql.Record) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(mssqlGetByIDQuery, strings.Join(record.Columns(), ", "), tableName), nil
+	return fmt.Sprintf(mssqlGetByIDQuery, parseColumns(record.Columns()), tableName), nil
 }
 
 func (p *parser) ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) (string, []int, error) {
@@ -32,7 +31,7 @@ func (p *parser) ParseGetByFilterQuery(filter *sql.Filter, records sql.Records) 
 		return "", nil, err
 	}
 
-	query := fmt.Sprintf(mssqlGetQuery, strings.Join(records.Columns(), ", "), tableName)
+	query := fmt.Sprintf(mssqlGetQuery, parseColumns(records.Columns()), tableName)
 	if filterString != "" {
 		query += " " + filterString
 	}

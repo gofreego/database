@@ -1,52 +1,3 @@
-// Package sql provides a unified database interface for multiple database engines.
-// It supports PostgreSQL, MySQL, and MSSQL with a consistent API for common database operations.
-//
-// Features:
-//   - CRUD operations (Create, Read, Update, Delete)
-//   - Soft delete support
-//   - Prepared statements
-//   - Connection pooling
-//   - Transaction support
-//   - Migration handling
-//   - Query building with conditions, filters, and joins
-//
-// Example usage:
-//
-//	config := &sqlfactory.Config{
-//	    Name: sqlfactory.PostgreSQL,
-//	    PostgreSQL: &postgresql.Config{
-//	        Host:     "localhost",
-//	        Port:     5432,
-//	        User:     "user",
-//	        Password: "password",
-//	        Database: "mydb",
-//	    },
-//	}
-//
-//	db, err := sqlfactory.NewDatabase(ctx, config)
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//	defer db.Close(ctx)
-//
-//	// Insert a record
-//	user := &User{Name: "John", Email: "john@example.com"}
-//	err = db.Insert(ctx, user)
-//
-//	// Get by ID
-//	user = &User{Id: 1}
-//	err = db.GetByID(ctx, user)
-//
-//	// Get with filter
-//	filter := &sql.Filter{
-//	    Condition: &sql.Condition{
-//	        Field:    "email",
-//	        Operator: sql.EQ,
-//	        Value:    sql.NewValue("john@example.com"),
-//	    },
-//	}
-//	users := &Users{}
-//	err = db.Get(ctx, filter, []any{"john@example.com"}, users)
 package sql
 
 import (
@@ -162,7 +113,7 @@ type Record interface {
 
 	// Columns returns the names of all columns in the record.
 	// The ID column should be included in this list.
-	Columns() []string
+	Columns() []*Field
 
 	// Values returns the values of all non-ID columns in the record.
 	// These values are used for insert and update operations.
@@ -183,7 +134,7 @@ type Records interface {
 	Table() *Table
 
 	// Columns returns the names of all columns in the records.
-	Columns() []string
+	Columns() []*Field
 
 	// Scan populates the records from a database result set.
 	// The rows parameter contains the result rows to scan.
@@ -511,6 +462,78 @@ func NewUpdates() *Updates {
 func (u *Updates) Add(field string, value *Value) *Updates {
 	u.Fields = append(u.Fields, UpdateField{Field: field, Value: value})
 	return u
+}
+
+type AggregateFunc int
+
+const (
+	None AggregateFunc = iota
+	Count
+	Sum
+	Avg
+	Min
+	Max
+)
+
+type Field struct {
+	Name     string
+	Field    *Field
+	Alias    string
+	Distinct bool
+	Func     AggregateFunc
+}
+
+func NewField(name string) *Field {
+	return &Field{
+		Name: name,
+	}
+}
+
+func (f *Field) As(alias string) *Field {
+	f.Alias = alias
+	return f
+}
+
+func CountOf(field *Field) *Field {
+	return &Field{
+		Field: field,
+		Func:  Count,
+	}
+}
+
+func SumOf(field *Field) *Field {
+	return &Field{
+		Field: field,
+		Func:  Sum,
+	}
+}
+
+func AvgOf(field *Field) *Field {
+	return &Field{
+		Field: field,
+		Func:  Avg,
+	}
+}
+
+func MinOf(field *Field) *Field {
+	return &Field{
+		Field: field,
+		Func:  Min,
+	}
+}
+
+func MaxOf(field *Field) *Field {
+	return &Field{
+		Field: field,
+		Func:  Max,
+	}
+}
+
+func DistinctOf(field *Field) *Field {
+	return &Field{
+		Field:    field,
+		Distinct: true,
+	}
 }
 
 // JoinType represents the type of join operation.

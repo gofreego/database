@@ -10,11 +10,11 @@ import (
 
 type mockRecords struct {
 	table   *sql.Table
-	columns []string
+	columns []*sql.Field
 }
 
 func (m *mockRecords) Table() *sql.Table        { return m.table }
-func (m *mockRecords) Columns() []string        { return m.columns }
+func (m *mockRecords) Columns() []*sql.Field    { return m.columns }
 func (m *mockRecords) Scan(rows sql.Rows) error { return nil }
 
 func TestParseGetByIDQuery(t *testing.T) {
@@ -135,7 +135,7 @@ func TestParseGetByFilterQuery(t *testing.T) {
 			name: "records with nil table",
 			args: args{
 				filter:  nil,
-				records: &mockRecords{table: nil, columns: []string{"id"}},
+				records: &mockRecords{table: nil, columns: []*sql.Field{sql.NewField("id")}},
 			},
 			want:    "",
 			want1:   nil,

@@ -32,11 +32,11 @@ func getUpdatesString(record sql.Record, lastIndex *int) string {
 	updates := []string{}
 	idColumn := record.IdColumn()
 	for _, column := range record.Columns() {
-		if column == idColumn {
+		if column.Name == idColumn {
 			continue // Skip the ID column in the update
 		}
 		*lastIndex++
-		updates = append(updates, fmt.Sprintf("%s = $%d", column, *lastIndex))
+		updates = append(updates, fmt.Sprintf("%s = $%d", column.Name, *lastIndex))
 	}
 	return strings.Join(updates, ", ")
 }

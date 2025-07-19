@@ -22,5 +22,5 @@ func (p *parser) ParseInsertQuery(record ...sql.Record) (string, []any, error) {
 	}
 
 	placehodlers, values := getValuesPlaceHolders(&lastIndex, record...)
-	return fmt.Sprintf(insertQuery, tableName, parseColumns(record[0]), placehodlers), values, nil
+	return fmt.Sprintf(insertQuery, tableName, parseInsertColumns(record[0]), placehodlers), values, nil
 }

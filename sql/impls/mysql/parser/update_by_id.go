@@ -30,10 +30,10 @@ func getUpdatesString(record sql.Record) string {
 	updates := []string{}
 	idColumn := record.IdColumn()
 	for _, column := range record.Columns() {
-		if column == idColumn {
+		if column.Name == idColumn {
 			continue // Skip the ID column in the update
 		}
-		updates = append(updates, column+" = ?")
+		updates = append(updates, fmt.Sprintf("%s = ?", column.Name))
 	}
 	return strings.Join(updates, ", ")
 }

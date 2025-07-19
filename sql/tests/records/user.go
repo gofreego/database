@@ -18,8 +18,16 @@ func (u *User) IdColumn() string {
 }
 
 // Columns implements sql.Record.
-func (u *User) Columns() []string {
-	return []string{"id", "name", "email", "password_hash", "is_active", "created_at", "updated_at"}
+func (u *User) Columns() []*sql.Field {
+	return []*sql.Field{
+		sql.NewField("id"),
+		sql.NewField("name"),
+		sql.NewField("email"),
+		sql.NewField("password_hash"),
+		sql.NewField("is_active"),
+		sql.NewField("created_at"),
+		sql.NewField("updated_at"),
+	}
 }
 
 // ID implements sql.Record.
