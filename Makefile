@@ -1,6 +1,8 @@
 # constants 
 TEST_DB_COMPOSE_FILE = docker-compose-test-sql-db.yml
 
+setup:
+	go install github.com/vektra/mockery/v2@latest
 # This will setup database on local env. 
 setup-db-up:
 	docker-compose -f $(TEST_DB_COMPOSE_FILE) up -d
@@ -33,6 +35,14 @@ view-coverage:
 	go tool cover -html=coverage.out -o coverage.html
 	open -a "Google Chrome" coverage.html
 
+mock:
+	go generate ./...
+
 clean:
 	rm -f coverage.out
-	rm -f coverage.html
+	rm -f coverage.html	@echo "Coverage files cleaned successfully!"
+
+clean-mocks:
+	@echo "Cleaning generated mocks..."
+	rm -rf ./mocks
+	@echo "Mocks cleaned successfully!"
