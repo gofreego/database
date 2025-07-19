@@ -3,7 +3,7 @@ TEST_DB_COMPOSE_FILE = docker-compose-test-sql-db.yml
 
 # This will setup database on local env. 
 setup-db-up:
-	docker-compose -f $(TEST_DB_COMPOSE_FILE) up -d\
+	docker-compose -f $(TEST_DB_COMPOSE_FILE) up -d
 
 # This will take databases down on local env.
 setup-db-down:
@@ -20,10 +20,14 @@ test:
 	echo "waiting 10 seconds for db to be up and running"
 	sleep 10
 	go test -v -count=1 -cover -coverprofile=coverage.out ./... | grep -E "(coverage|FAIL)"
-	go tool cover -func=coverage.out
-	go tool cover -html=coverage.out -o coverage.html
 	make setup-db-down
 
 # To view the coverage on Google Chrome
 view-coverage:
+	go tool cover -func=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
 	open -a "Google Chrome" coverage.html
+
+clean:
+	rm -f coverage.out
+	rm -f coverage.html
