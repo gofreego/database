@@ -12,6 +12,7 @@ type PreparedStatement struct {
 	noOfRecords        int
 	valueIndexes       []int
 	noOfValuesRequired int
+	query              string
 }
 
 func NewPreparedStatement(s *sql.Stmt) *PreparedStatement {
@@ -22,6 +23,11 @@ func NewPreparedStatement(s *sql.Stmt) *PreparedStatement {
 
 func (s *PreparedStatement) WithRecords(n int) *PreparedStatement {
 	s.noOfRecords = n
+	return s
+}
+
+func (s *PreparedStatement) WithQuery(query string) *PreparedStatement {
+	s.query = query
 	return s
 }
 
@@ -45,6 +51,10 @@ func (s *PreparedStatement) GetValueIndexes() []int {
 
 func (s *PreparedStatement) GetNoOfValuesRequired() int {
 	return s.noOfValuesRequired
+}
+
+func (s *PreparedStatement) GetQuery() string {
+	return s.query
 }
 
 /*

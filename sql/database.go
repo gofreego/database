@@ -75,6 +75,9 @@ type Database interface {
 	// The values slice should contain the parameter values in the order they appear in the condition.
 	// Returns the number of rows affected and an error if the operation fails.
 	Delete(ctx context.Context, table *Table, condition *Condition, values []any, options ...Options) (int64, error)
+
+	RunSP(ctx context.Context, spName string, values []any, result SPResult, options ...Options) error
+	BeginTransaction(ctx context.Context, options ...Options) (Transaction, error)
 }
 
 // Row represents a single row from a database query result.
@@ -83,6 +86,15 @@ type Row interface {
 	// Scan copies the columns in the current row into the values pointed at by dest.
 	// The number of values in dest must be the same as the number of columns in the row.
 	Scan(dest ...any) error
+}
+
+type Transaction interface {
+	// Commit commits the transaction.
+	// Returns an error if the commit fails.
+	Commit() error
+	// Rollback rolls back the transaction.
+	// Returns an error if the rollback fails.
+	Rollback() error
 }
 
 // Rows represents a set of rows from a database query result.
@@ -125,6 +137,29 @@ type Record interface {
 
 	// SetDeleted marks the record as deleted (for soft delete operations).
 	SetDeleted(deleted bool)
+}
+
+type SPResult interface {
+	Scan(row Row) error
+}
+
+type SPParams struct {
+	params map[string]any
+}
+
+func NewSPParams() *SPParams {
+	return &SPParams{
+		params: make(map[string]any),
+	}
+}
+
+func (p *SPParams) Add(name string, value any) *SPParams {
+	p.params[name] = value
+	return p
+}
+
+func (p *SPParams) Get() map[string]any {
+	return p.params
 }
 
 // Records represents a collection of database records.
@@ -673,6 +708,8 @@ type Options struct {
 	PreparedName string
 	// Timeout specifies the query execution timeout in milliseconds.
 	Timeout int64
+	// Transaction specifies whether to run the operation within a transaction.
+	Transaction Transaction
 }
 
 // GetOptions returns the first option from the options slice if available,

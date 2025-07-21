@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	driver "database/sql"
 
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/internal"
@@ -52,7 +53,7 @@ func (c *Executor) Get(ctx context.Context, filter *sql.Filter, values []any, re
 
 func (c *Executor) GetByID(ctx context.Context, record sql.Record, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
-	var err error
+	var row *driver.Row
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
@@ -71,18 +72,15 @@ func (c *Executor) GetByID(ctx context.Context, record sql.Record, options ...sq
 			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
 
-		row := stmt.GetStatement().QueryRowContext(ctx, record.ID())
-		if err = row.Err(); err != nil {
+		row = stmt.GetStatement().QueryRowContext(ctx, record.ID())
+	} else {
+		query, err := c.parser.ParseGetByIDQuery(record)
+		if err != nil {
 			return internal.HandleError(err)
 		}
-		return internal.HandleError(record.Scan(row))
+		logger.Debug(ctx, "GetByID query: %s", query)
+		row = c.db.QueryRowContext(ctx, query, record.ID())
 	}
-	query, err := c.parser.ParseGetByIDQuery(record)
-	if err != nil {
-		return internal.HandleError(err)
-	}
-	logger.Debug(ctx, "GetByID query: %s", query)
-	row := c.db.QueryRowContext(ctx, query, record.ID())
 	if row.Err() != nil {
 		return internal.HandleError(row.Err())
 	}

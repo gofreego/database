@@ -19,6 +19,7 @@ type Parser interface {
 	ParseUpdateByIDQuery(record sql.Record) (string, error)
 	ParseUpdateQuery(table *sql.Table, updates *sql.Updates, condition *sql.Condition) (string, []int, error)
 	ParseUpsertQuery(record sql.Record) (string, []any, error)
+	ParseSPQuery(spName string, values []any) (string, error)
 }
 
 type DB interface {
@@ -28,6 +29,7 @@ type DB interface {
 	ExecContext(ctx context.Context, query string, args ...any) (driver.Result, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*driver.Rows, error)
 	QueryRowContext(ctx context.Context, query string, args ...any) *driver.Row
+	BeginTx(ctx context.Context, opts *driver.TxOptions) (*driver.Tx, error)
 }
 
 type Executor struct {
@@ -36,7 +38,7 @@ type Executor struct {
 	preparedStatements internal.PreparedStatements
 }
 
-func NewExecutor(conn *driver.DB, parser Parser) *Executor {
+func NewExecutor(conn DB, parser Parser) *Executor {
 	return &Executor{
 		db:                 conn,
 		parser:             parser,

@@ -14,6 +14,43 @@ type Database struct {
 	mock.Mock
 }
 
+// BeginTransaction provides a mock function with given fields: ctx, options
+func (_m *Database) BeginTransaction(ctx context.Context, options ...sql.Options) (sql.Transaction, error) {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for BeginTransaction")
+	}
+
+	var r0 sql.Transaction
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, ...sql.Options) (sql.Transaction, error)); ok {
+		return rf(ctx, options...)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, ...sql.Options) sql.Transaction); ok {
+		r0 = rf(ctx, options...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(sql.Transaction)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, ...sql.Options) error); ok {
+		r1 = rf(ctx, options...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Close provides a mock function with given fields: ctx
 func (_m *Database) Close(ctx context.Context) error {
 	ret := _m.Called(ctx)
@@ -223,6 +260,31 @@ func (_m *Database) Ping(ctx context.Context) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
 		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// RunSP provides a mock function with given fields: ctx, spName, params, record, options
+func (_m *Database) RunSP(ctx context.Context, spName string, params *sql.SPParams, record sql.SPResult, options ...sql.Options) error {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, spName, params, record)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RunSP")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, *sql.SPParams, sql.SPResult, ...sql.Options) error); ok {
+		r0 = rf(ctx, spName, params, record, options...)
 	} else {
 		r0 = ret.Error(0)
 	}

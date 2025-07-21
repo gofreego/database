@@ -185,6 +185,34 @@ func (_m *Parser) ParseInsertQuery(record ...sql.Record) (string, []interface{},
 	return r0, r1, r2
 }
 
+// ParseSPQuery provides a mock function with given fields: spName, values
+func (_m *Parser) ParseSPQuery(spName string, values []interface{}) (string, error) {
+	ret := _m.Called(spName, values)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ParseSPQuery")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, []interface{}) (string, error)); ok {
+		return rf(spName, values)
+	}
+	if rf, ok := ret.Get(0).(func(string, []interface{}) string); ok {
+		r0 = rf(spName, values)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(string, []interface{}) error); ok {
+		r1 = rf(spName, values)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ParseSoftDeleteByIDQuery provides a mock function with given fields: table, record
 func (_m *Parser) ParseSoftDeleteByIDQuery(table *sql.Table, record sql.Record) (string, error) {
 	ret := _m.Called(table, record)
