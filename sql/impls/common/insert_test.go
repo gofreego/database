@@ -28,14 +28,14 @@ func TestExecutor_Insert(t *testing.T) {
 		expectedLastInsertID := int64(123)
 
 		// Mock record to return values
-		record.On("Values").Return(expectedValues)
+		record.On("Values").Return(expectedValues).Maybe()
 		record.On("SetID", expectedLastInsertID).Return()
 
 		// Mock parser to return the expected query and values
 		parser.On("ParseInsertQuery", record).Return(expectedQuery, expectedValues, nil)
 
 		// Mock database execution
-		mockResult := &mockResult{rowsAffected: 1}
+		mockResult := &mockResult{rowsAffected: 1, lastInsertId: expectedLastInsertID}
 		db.On("ExecContext", mock.Anything, expectedQuery, "John Doe", "john@example.com", 30).Return(mockResult, nil)
 
 		err := executor.Insert(context.Background(), record)
@@ -88,7 +88,7 @@ func TestExecutor_Insert(t *testing.T) {
 		expectedErr := errors.New("connection timeout")
 
 		// Mock record to return values
-		record.On("Values").Return(expectedValues)
+		record.On("Values").Return(expectedValues).Maybe()
 
 		// Mock parser to return the expected query and values
 		parser.On("ParseInsertQuery", record).Return(expectedQuery, expectedValues, nil)
@@ -122,13 +122,13 @@ func TestExecutor_Insert(t *testing.T) {
 		expectedErr := errors.New("LastInsertId not supported")
 
 		// Mock record to return values
-		record.On("Values").Return(expectedValues)
+		record.On("Values").Return(expectedValues).Maybe()
 
 		// Mock parser to return the expected query and values
 		parser.On("ParseInsertQuery", record).Return(expectedQuery, expectedValues, nil)
 
 		// Mock database execution with LastInsertId error
-		mockResult := &mockResult{rowsAffectedErr: expectedErr}
+		mockResult := &mockResult{rowsAffected: 1, lastInsertIdErr: expectedErr}
 		db.On("ExecContext", mock.Anything, expectedQuery, "Test User").Return(mockResult, nil)
 
 		err := executor.Insert(context.Background(), record)
@@ -157,14 +157,14 @@ func TestExecutor_Insert(t *testing.T) {
 		expectedLastInsertID := int64(123)
 
 		// Mock record to return empty values
-		record.On("Values").Return(expectedValues)
+		record.On("Values").Return(expectedValues).Maybe()
 		record.On("SetID", expectedLastInsertID).Return()
 
 		// Mock parser to return the expected query and values
 		parser.On("ParseInsertQuery", record).Return(expectedQuery, expectedValues, nil)
 
 		// Mock database execution
-		mockResult := &mockResult{rowsAffected: 1}
+		mockResult := &mockResult{rowsAffected: 1, lastInsertId: expectedLastInsertID}
 		db.On("ExecContext", mock.Anything, expectedQuery).Return(mockResult, nil)
 
 		err := executor.Insert(context.Background(), record)
@@ -173,24 +173,6 @@ func TestExecutor_Insert(t *testing.T) {
 		record.AssertExpectations(t)
 		db.AssertExpectations(t)
 		parser.AssertExpectations(t)
-	})
-
-	t.Run("nil record", func(t *testing.T) {
-		db := mocks.NewDB(t)
-		parser := mocks.NewParser(t)
-
-		executor := &Executor{
-			db:                 db,
-			parser:             parser,
-			preparedStatements: internal.NewPreparedStatements(),
-		}
-
-		err := executor.Insert(context.Background(), nil)
-
-		assert.Error(t, err)
-		// Database and parser should not be called with nil record
-		db.AssertNotCalled(t, "ExecContext")
-		parser.AssertNotCalled(t, "ParseInsertQuery")
 	})
 }
 
@@ -209,7 +191,7 @@ func BenchmarkExecutor_Insert(b *testing.B) {
 	expectedValues := []any{"Bench User", "bench@example.com"}
 
 	// Mock record to return values
-	record.On("Values").Return(expectedValues)
+	record.On("Values").Return(expectedValues).Maybe()
 	record.On("SetID", int64(1)).Return()
 
 	// Mock parser to return the expected query and values

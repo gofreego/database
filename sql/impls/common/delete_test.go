@@ -306,10 +306,12 @@ func BenchmarkExecutor_DeleteByID(b *testing.B) {
 type mockResult struct {
 	rowsAffected    int64
 	rowsAffectedErr error
+	lastInsertId    int64
+	lastInsertIdErr error
 }
 
 func (m *mockResult) LastInsertId() (int64, error) {
-	return 0, nil
+	return m.lastInsertId, m.lastInsertIdErr
 }
 
 func (m *mockResult) RowsAffected() (int64, error) {

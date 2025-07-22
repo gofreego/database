@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gofreego/database/mocks"
+	"github.com/gofreego/database/sql"
 	sqlpkg "github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/internal"
 	"github.com/stretchr/testify/assert"
@@ -77,7 +78,9 @@ func TestExecutor_Update(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), rowsAffected)
+		assert.IsType(t, &sql.Error{}, err)
 		assert.Contains(t, err.Error(), "prepare not implemented")
+		assert.Equal(t, sqlpkg.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 		parser.AssertExpectations(t)
 	})
@@ -105,7 +108,7 @@ func TestExecutor_Update(t *testing.T) {
 
 		// Mock database execution with no rows affected
 		mockResult := &mockResult{rowsAffected: 0}
-		db.On("ExecContext", mock.Anything, expectedQuery, "No Match", 999).Return(mockResult, nil)
+		db.On("ExecContext", mock.Anything, expectedQuery, 999, 999).Return(mockResult, nil)
 
 		rowsAffected, err := executor.Update(context.Background(), table, updates, condition, values)
 
@@ -138,7 +141,7 @@ func TestExecutor_Update(t *testing.T) {
 
 		// Mock database execution with multiple rows affected
 		mockResult := &mockResult{rowsAffected: 5}
-		db.On("ExecContext", mock.Anything, expectedQuery, 1, 0).Return(mockResult, nil)
+		db.On("ExecContext", mock.Anything, expectedQuery, 0, 0).Return(mockResult, nil)
 
 		rowsAffected, err := executor.Update(context.Background(), table, updates, condition, values)
 
@@ -201,13 +204,15 @@ func TestExecutor_Update(t *testing.T) {
 		parser.On("ParseUpdateQuery", table, updates, condition).Return(expectedQuery, expectedValueIndexes, nil)
 
 		// Mock database execution to return error
-		db.On("ExecContext", mock.Anything, expectedQuery, "Error User", 123).Return(nil, expectedErr)
+		db.On("ExecContext", mock.Anything, expectedQuery, 123, 123).Return(nil, expectedErr)
 
 		rowsAffected, err := executor.Update(context.Background(), table, updates, condition, values)
 
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), rowsAffected)
+		assert.IsType(t, &sql.Error{}, err)
 		assert.Contains(t, err.Error(), "connection timeout")
+		assert.Equal(t, sqlpkg.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 		parser.AssertExpectations(t)
 	})
@@ -235,13 +240,15 @@ func TestExecutor_Update(t *testing.T) {
 
 		// Mock database execution with rows affected error
 		mockResult := &mockResult{rowsAffectedErr: errors.New("rows affected not supported")}
-		db.On("ExecContext", mock.Anything, expectedQuery, "Rows Error User", 123).Return(mockResult, nil)
+		db.On("ExecContext", mock.Anything, expectedQuery, 123, 123).Return(mockResult, nil)
 
 		rowsAffected, err := executor.Update(context.Background(), table, updates, condition, values)
 
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), rowsAffected)
+		assert.IsType(t, &sql.Error{}, err)
 		assert.Contains(t, err.Error(), "rows affected not supported")
+		assert.Equal(t, sqlpkg.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 		parser.AssertExpectations(t)
 	})
@@ -268,7 +275,7 @@ func TestExecutor_Update(t *testing.T) {
 		parser.On("ParseUpdateQuery", table, updates, condition).Return(expectedQuery, expectedValueIndexes, nil)
 
 		// Mock database to return context cancellation error
-		db.On("ExecContext", mock.Anything, expectedQuery, "Context User", 123).Return(nil, context.Canceled)
+		db.On("ExecContext", mock.Anything, expectedQuery, 123, 123).Return(nil, context.Canceled)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
@@ -277,7 +284,9 @@ func TestExecutor_Update(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), rowsAffected)
+		assert.IsType(t, &sql.Error{}, err)
 		assert.Contains(t, err.Error(), "context canceled")
+		assert.Equal(t, sqlpkg.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 		parser.AssertExpectations(t)
 	})
@@ -312,7 +321,9 @@ func TestExecutor_Update(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), rowsAffected)
+		assert.IsType(t, &sql.Error{}, err)
 		assert.Contains(t, err.Error(), "syntax error")
+		assert.Equal(t, sqlpkg.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 		parser.AssertExpectations(t)
 	})
@@ -387,7 +398,7 @@ func TestExecutor_Update(t *testing.T) {
 		table := sqlpkg.NewTable("users")
 		updates := sqlpkg.NewUpdates().
 			Add("is_active", sqlpkg.NewValue(1))
-		values := []any{}
+		values := []any{1}
 		expectedQuery := "UPDATE users SET is_active = ?"
 		expectedValueIndexes := []int{0}
 

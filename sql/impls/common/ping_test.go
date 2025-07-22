@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofreego/database/mocks"
+	"github.com/gofreego/database/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -47,7 +48,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(context.Background())
 
 		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "connection refused")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
@@ -69,7 +72,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(ctx)
 
 		assert.Error(t, err)
-		assert.Equal(t, context.Canceled, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "context canceled")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
@@ -94,7 +99,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(ctx)
 
 		assert.Error(t, err)
-		assert.Equal(t, context.DeadlineExceeded, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "context deadline exceeded")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
@@ -134,7 +141,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(context.Background())
 
 		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "connection timeout")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
@@ -154,7 +163,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(context.Background())
 
 		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "database shutdown")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
@@ -174,7 +185,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(context.Background())
 
 		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "network unreachable")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
@@ -194,7 +207,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(context.Background())
 
 		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "authentication failed")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
@@ -214,7 +229,9 @@ func TestExecutor_Ping(t *testing.T) {
 		err := executor.Ping(context.Background())
 
 		assert.Error(t, err)
-		assert.Equal(t, expectedErr, err)
+		assert.IsType(t, &sql.Error{}, err)
+		assert.Contains(t, err.Error(), "permission denied")
+		assert.Equal(t, sql.ErrUnknownDatabaseError, err.(*sql.Error).Code())
 		db.AssertExpectations(t)
 	})
 
