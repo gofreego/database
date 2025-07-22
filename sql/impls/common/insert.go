@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	db "database/sql"
 	driver "database/sql"
 	"errors"
 
@@ -18,7 +17,7 @@ It will set the ID of the record to the last inserted ID.
 func (c *Executor) Insert(ctx context.Context, record sql.Record, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var err error
-	var res db.Result
+	var res driver.Result
 	var query string
 	var values []any
 	if opt.PreparedName != "" {
@@ -35,7 +34,7 @@ func (c *Executor) Insert(ctx context.Context, record sql.Record, options ...sql
 				if err != nil {
 					return internal.HandleError(err)
 				}
-				stmt = internal.NewPreparedStatement(ps)
+				stmt = internal.NewPreparedStatement(ps).WithQuery(query)
 				c.preparedStatements[opt.PreparedName] = stmt
 			}
 		}
@@ -93,7 +92,7 @@ func (c *Executor) InsertMany(ctx context.Context, records []sql.Record, options
 	}
 	opt := sql.GetOptions(options...)
 	var err error
-	var res db.Result
+	var res driver.Result
 	var query string
 	var values []any
 	if opt.PreparedName != "" {
@@ -110,7 +109,7 @@ func (c *Executor) InsertMany(ctx context.Context, records []sql.Record, options
 				if err != nil {
 					return 0, internal.HandleError(err)
 				}
-				stmt = internal.NewPreparedStatement(ps).WithRecords(len(records))
+				stmt = internal.NewPreparedStatement(ps).WithRecords(len(records)).WithQuery(query)
 				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
 			if stmt.GetNoOfRecords() != len(records) {

@@ -267,14 +267,14 @@ func (_m *Database) Ping(ctx context.Context) error {
 	return r0
 }
 
-// RunSP provides a mock function with given fields: ctx, spName, params, record, options
-func (_m *Database) RunSP(ctx context.Context, spName string, params *sql.SPParams, record sql.SPResult, options ...sql.Options) error {
+// RunSP provides a mock function with given fields: ctx, spName, values, result, options
+func (_m *Database) RunSP(ctx context.Context, spName string, values []interface{}, result sql.SPResult, options ...sql.Options) error {
 	_va := make([]interface{}, len(options))
 	for _i := range options {
 		_va[_i] = options[_i]
 	}
 	var _ca []interface{}
-	_ca = append(_ca, ctx, spName, params, record)
+	_ca = append(_ca, ctx, spName, values, result)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 
@@ -283,8 +283,8 @@ func (_m *Database) RunSP(ctx context.Context, spName string, params *sql.SPPara
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, *sql.SPParams, sql.SPResult, ...sql.Options) error); ok {
-		r0 = rf(ctx, spName, params, record, options...)
+	if rf, ok := ret.Get(0).(func(context.Context, string, []interface{}, sql.SPResult, ...sql.Options) error); ok {
+		r0 = rf(ctx, spName, values, result, options...)
 	} else {
 		r0 = ret.Error(0)
 	}
