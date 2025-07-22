@@ -1,9 +1,6 @@
 package common
 
 import (
-	"context"
-	driver "database/sql"
-
 	"github.com/gofreego/database/sql"
 	"github.com/gofreego/database/sql/internal"
 )
@@ -22,23 +19,13 @@ type Parser interface {
 	ParseSPQuery(spName string, values []any) (string, error)
 }
 
-type DB interface {
-	Close() error
-	PingContext(ctx context.Context) error
-	PrepareContext(ctx context.Context, query string) (*driver.Stmt, error)
-	ExecContext(ctx context.Context, query string, args ...any) (driver.Result, error)
-	QueryContext(ctx context.Context, query string, args ...any) (*driver.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...any) *driver.Row
-	BeginTx(ctx context.Context, opts *driver.TxOptions) (*driver.Tx, error)
-}
-
 type Executor struct {
-	db                 DB
+	db                 internal.DB
 	parser             Parser
 	preparedStatements internal.PreparedStatements
 }
 
-func NewExecutor(conn DB, parser Parser) *Executor {
+func NewExecutor(conn internal.DB, parser Parser) *Executor {
 	return &Executor{
 		db:                 conn,
 		parser:             parser,

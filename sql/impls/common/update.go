@@ -28,34 +28,54 @@ func (c *Executor) UpdateByID(ctx context.Context, record sql.Record, options ..
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
-
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err = c.parser.ParseUpdateByIDQuery(record)
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				query, err = c.parser.ParseUpdateByIDQuery(record)
+				if err != nil {
+					return false, err
+				}
+				logger.Debug(ctx, "UpdateByID :: prepareName: %s ,query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return false, fmt.Errorf("UpdateByID prepare failed: %w", err)
+				}
+				stmt = internal.NewPreparedStatement(ps)
+				c.preparedStatements[opt.PreparedName] = stmt
+			}
+		}
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
 			if err != nil {
 				return false, err
 			}
-			logger.Debug(ctx, "UpdateByID :: prepareName: %s ,query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return false, fmt.Errorf("UpdateByID prepare failed: %w", err)
-			}
-			stmt = internal.NewPreparedStatement(ps)
-			c.preparedStatements[opt.PreparedName] = stmt
+			res, err = txn.ExecContext(ctx, stmt.GetQuery(), values...)
+		} else {
+			res, err = stmt.GetStatement().ExecContext(ctx, values...)
 		}
-		res, err = stmt.GetStatement().ExecContext(ctx, values...)
-		if err != nil {
-			return false, fmt.Errorf("UpdateByID exec prepared failed: %w", err)
-		}
+
 	} else {
 		query, err = c.parser.ParseUpdateByIDQuery(record)
 		if err != nil {
 			return false, err
 		}
-		logger.Debug(ctx, "UpdateByID query:: %s", query)
-		res, err = c.db.ExecContext(ctx, query, values...)
-		if err != nil {
-			return false, fmt.Errorf("UpdateByID failed: %w", err)
+		logger.Debug(ctx, "UpdateByID query: %s", query)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return false, err
+			}
+			res, err = txn.ExecContext(ctx, query, values...)
+		} else {
+			res, err = c.db.ExecContext(ctx, query, values...)
 		}
+	}
+	if err != nil {
+		return false, internal.HandleError(err)
 	}
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
@@ -74,27 +94,50 @@ func (c *Executor) Update(ctx context.Context, table *sql.Table, updates *sql.Up
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, valueIndexes, err = c.parser.ParseUpdateQuery(table, updates, condition)
-			if err != nil {
-				return 0, internal.HandleError(err)
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				query, valueIndexes, err = c.parser.ParseUpdateQuery(table, updates, condition)
+				if err != nil {
+					return 0, internal.HandleError(err)
+				}
+				logger.Debug(ctx, "Update query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return 0, internal.HandleError(err)
+				}
+				stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes)
+				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
-			logger.Debug(ctx, "Update query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return 0, internal.HandleError(err)
-			}
-			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes)
-			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
-		result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return 0, err
+			}
+			result, err = txn.ExecContext(ctx, stmt.GetQuery(), sql.GetValues(valueIndexes, values)...)
+		} else {
+			result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
+		}
 	} else {
 		query, valueIndexes, err = c.parser.ParseUpdateQuery(table, updates, condition)
 		if err != nil {
 			return 0, internal.HandleError(err)
 		}
 		logger.Debug(ctx, "Update query: %s", query)
-		result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return 0, err
+			}
+			result, err = txn.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		} else {
+			result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		}
 	}
 	if err != nil {
 		return 0, internal.HandleError(err)

@@ -17,36 +17,56 @@ func (c *Executor) Get(ctx context.Context, filter *sql.Filter, values []any, re
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
-
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			var query string
-			query, filterIndexes, err = c.parser.ParseGetByFilterQuery(filter, records)
-			if err != nil {
-				return internal.HandleError(err)
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				var query string
+				query, filterIndexes, err = c.parser.ParseGetByFilterQuery(filter, records)
+				if err != nil {
+					return internal.HandleError(err)
+				}
+				logger.Debug(ctx, "GetByFilter query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return internal.HandleError(err)
+				}
+				stmt = internal.NewPreparedStatement(ps).WithValueIndexes(filterIndexes).WithQuery(query)
+				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
-			logger.Debug(ctx, "GetByFilter query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return internal.HandleError(err)
-			}
-			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(filterIndexes)
-			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
-		rows, err = stmt.GetStatement().QueryContext(ctx, sql.GetValues(stmt.GetValueIndexes(), values)...)
-		if err != nil {
-			return internal.HandleError(err)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return err
+			}
+			rows, err = txn.QueryContext(ctx, stmt.GetQuery(), sql.GetValues(stmt.GetValueIndexes(), values)...)
+		} else {
+			rows, err = stmt.GetStatement().QueryContext(ctx, sql.GetValues(stmt.GetValueIndexes(), values)...)
 		}
 	} else {
+		// if prepared statement is not provided, parse the query and execute it
 		var query string
 		query, filterIndexes, err = c.parser.ParseGetByFilterQuery(filter, records)
 		if err != nil {
 			return internal.HandleError(err)
 		}
 		logger.Debug(ctx, "GetByFilter query: %s", query)
-		rows, err = c.db.QueryContext(ctx, query, sql.GetValues(filterIndexes, values)...)
-		if err != nil {
-			return internal.HandleError(err)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return err
+			}
+			rows, err = txn.QueryContext(ctx, query, sql.GetValues(filterIndexes, values)...)
+		} else {
+			rows, err = c.db.QueryContext(ctx, query, sql.GetValues(filterIndexes, values)...)
 		}
+	}
+	if err != nil {
+		return internal.HandleError(err)
 	}
 	return internal.HandleError(records.Scan(rows))
 }
@@ -54,32 +74,55 @@ func (c *Executor) Get(ctx context.Context, filter *sql.Filter, values []any, re
 func (c *Executor) GetByID(ctx context.Context, record sql.Record, options ...sql.Options) error {
 	opt := sql.GetOptions(options...)
 	var row *driver.Row
+	var err error
+	var query string
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
-
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err := c.parser.ParseGetByIDQuery(record)
-			if err != nil {
-				return internal.HandleError(err)
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				query, err = c.parser.ParseGetByIDQuery(record)
+				if err != nil {
+					return internal.HandleError(err)
+				}
+				logger.Debug(ctx, "GetByID query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return internal.HandleError(err)
+				}
+				stmt = internal.NewPreparedStatement(ps).WithQuery(query)
+				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
-			logger.Debug(ctx, "GetByID query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return internal.HandleError(err)
-			}
-			stmt = internal.NewPreparedStatement(ps)
-			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
-
-		row = stmt.GetStatement().QueryRowContext(ctx, record.ID())
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return err
+			}
+			row = txn.QueryRowContext(ctx, stmt.GetQuery(), record.ID())
+		} else {
+			row = stmt.GetStatement().QueryRowContext(ctx, record.ID())
+		}
 	} else {
-		query, err := c.parser.ParseGetByIDQuery(record)
+		query, err = c.parser.ParseGetByIDQuery(record)
 		if err != nil {
 			return internal.HandleError(err)
 		}
 		logger.Debug(ctx, "GetByID query: %s", query)
-		row = c.db.QueryRowContext(ctx, query, record.ID())
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return err
+			}
+			row = txn.QueryRowContext(ctx, query, record.ID())
+		} else {
+			row = c.db.QueryRowContext(ctx, query, record.ID())
+		}
 	}
 	if row.Err() != nil {
 		return internal.HandleError(row.Err())

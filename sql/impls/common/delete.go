@@ -20,21 +20,32 @@ func (c *Executor) DeleteByID(ctx context.Context, record sql.Record, options ..
 		var stmt *internal.PreparedStatement
 		var ok bool
 		// if prepared statement is not found, parse the query and create a new prepared statement
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err = c.parser.ParseDeleteByIDQuery(record)
-			if err != nil {
-				return false, internal.HandleError(err)
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				query, err = c.parser.ParseDeleteByIDQuery(record)
+				if err != nil {
+					return false, internal.HandleError(err)
+				}
+				logger.Debug(ctx, "DeleteByID query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return false, internal.HandleError(err)
+				}
+				stmt = internal.NewPreparedStatement(ps).WithQuery(query)
+				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
-			logger.Debug(ctx, "DeleteByID query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return false, internal.HandleError(err)
-			}
-			stmt = internal.NewPreparedStatement(ps)
-			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
 		// execute the prepared statement
-		result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return false, err
+			}
+			result, err = txn.ExecContext(ctx, stmt.GetQuery(), record.ID())
+		} else {
+			result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
+		}
 	} else {
 		// if prepared name is empty, parse the query and execute the query
 		query, err = c.parser.ParseDeleteByIDQuery(record)
@@ -42,7 +53,17 @@ func (c *Executor) DeleteByID(ctx context.Context, record sql.Record, options ..
 			return false, internal.HandleError(err)
 		}
 		logger.Debug(ctx, "DeleteByID query: %s", query)
-		result, err = c.db.ExecContext(ctx, query, record.ID())
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return false, err
+			}
+			result, err = txn.ExecContext(ctx, query, record.ID())
+		} else {
+			result, err = c.db.ExecContext(ctx, query, record.ID())
+		}
 	}
 	// if there is an error, return false and the error
 	if err != nil {
@@ -67,27 +88,50 @@ func (c *Executor) Delete(ctx context.Context, table *sql.Table, condition *sql.
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, valueIndexes, err = c.parser.ParseDeleteQuery(table, condition)
-			if err != nil {
-				return 0, internal.HandleError(err)
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				query, valueIndexes, err = c.parser.ParseDeleteQuery(table, condition)
+				if err != nil {
+					return 0, internal.HandleError(err)
+				}
+				logger.Debug(ctx, "Delete query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return 0, internal.HandleError(err)
+				}
+				stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes).WithQuery(query)
+				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
-			logger.Debug(ctx, "Delete query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return 0, internal.HandleError(err)
-			}
-			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes)
-			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
-		result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return 0, err
+			}
+			result, err = txn.ExecContext(ctx, stmt.GetQuery(), sql.GetValues(valueIndexes, values)...)
+		} else {
+			result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
+		}
 	} else {
 		query, valueIndexes, err = c.parser.ParseDeleteQuery(table, condition)
 		if err != nil {
 			return 0, internal.HandleError(err)
 		}
 		logger.Debug(ctx, "Delete query: %s", query)
-		result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return 0, err
+			}
+			result, err = txn.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		} else {
+			result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		}
 	}
 	if err != nil {
 		return 0, internal.HandleError(err)
@@ -108,27 +152,50 @@ func (c *Executor) SoftDeleteByID(ctx context.Context, record sql.Record, option
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, err = c.parser.ParseSoftDeleteByIDQuery(record.Table(), record)
-			if err != nil {
-				return false, internal.HandleError(err)
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				query, err = c.parser.ParseSoftDeleteByIDQuery(record.Table(), record)
+				if err != nil {
+					return false, internal.HandleError(err)
+				}
+				logger.Debug(ctx, "Soft delete by id query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return false, internal.HandleError(err)
+				}
+				stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes).WithQuery(query)
+				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
-			logger.Debug(ctx, "Soft delete by id query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return false, internal.HandleError(err)
-			}
-			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes)
-			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
-		result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return false, err
+			}
+			result, err = txn.ExecContext(ctx, stmt.GetQuery(), record.ID())
+		} else {
+			result, err = stmt.GetStatement().ExecContext(ctx, record.ID())
+		}
 	} else {
 		query, err = c.parser.ParseSoftDeleteByIDQuery(record.Table(), record)
 		if err != nil {
 			return false, internal.HandleError(err)
 		}
 		logger.Debug(ctx, "Soft delete by id query: %s", query)
-		result, err = c.db.ExecContext(ctx, query, record.ID())
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return false, err
+			}
+			result, err = txn.ExecContext(ctx, query, record.ID())
+		} else {
+			result, err = c.db.ExecContext(ctx, query, record.ID())
+		}
 	}
 	if err != nil {
 		return false, internal.HandleError(err)
@@ -149,27 +216,50 @@ func (c *Executor) SoftDelete(ctx context.Context, table *sql.Table, condition *
 	if opt.PreparedName != "" {
 		var stmt *internal.PreparedStatement
 		var ok bool
-		if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
-			query, valueIndexes, err = c.parser.ParseSoftDeleteQuery(table, condition)
-			if err != nil {
-				return 0, internal.HandleError(err)
+		// if prepared statement is not found, parse the query and create a new prepared statement
+		{
+			if stmt, ok = c.preparedStatements.Get(opt.PreparedName); !ok {
+				query, valueIndexes, err = c.parser.ParseSoftDeleteQuery(table, condition)
+				if err != nil {
+					return 0, internal.HandleError(err)
+				}
+				logger.Debug(ctx, "Soft delete query: %s", query)
+				ps, err := c.db.PrepareContext(ctx, query)
+				if err != nil {
+					return 0, internal.HandleError(err)
+				}
+				stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes).WithQuery(query)
+				c.preparedStatements.Add(opt.PreparedName, stmt)
 			}
-			logger.Debug(ctx, "Soft delete query: %s", query)
-			ps, err := c.db.PrepareContext(ctx, query)
-			if err != nil {
-				return 0, internal.HandleError(err)
-			}
-			stmt = internal.NewPreparedStatement(ps).WithValueIndexes(valueIndexes)
-			c.preparedStatements.Add(opt.PreparedName, stmt)
 		}
-		result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return 0, err
+			}
+			result, err = txn.ExecContext(ctx, stmt.GetQuery(), sql.GetValues(valueIndexes, values)...)
+		} else {
+			result, err = stmt.GetStatement().ExecContext(ctx, sql.GetValues(valueIndexes, values)...)
+		}
 	} else {
 		query, valueIndexes, err = c.parser.ParseSoftDeleteQuery(table, condition)
 		if err != nil {
 			return 0, internal.HandleError(err)
 		}
 		logger.Debug(ctx, "Soft delete query: %s", query)
-		result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		// if transaction is provided, use it to execute the query
+		if opt.Transaction != nil {
+			var txn *driver.Tx
+			txn, err = internal.GetTransaction(opt.Transaction)
+			if err != nil {
+				return 0, err
+			}
+			result, err = txn.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		} else {
+			result, err = c.db.ExecContext(ctx, query, sql.GetValues(valueIndexes, values)...)
+		}
 	}
 	if err != nil {
 		return 0, internal.HandleError(err)
