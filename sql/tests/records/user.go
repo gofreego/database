@@ -1,0 +1,75 @@
+package records
+
+import "github.com/gofreego/database/sql"
+
+type User struct {
+	Id           int64  `sql:"id"`
+	Name         string `sql:"name"`
+	Email        string `sql:"email"`
+	PasswordHash string `sql:"password_hash"`
+	Score        int    `sql:"score"`
+	IsActive     int    `sql:"is_active"`
+	CreatedAt    int64  `sql:"created_at"`
+	UpdatedAt    int64  `sql:"updated_at"`
+	sql.UnimplementedRecord
+}
+
+func (u *User) IdColumn() string {
+	return "id"
+}
+
+// Columns implements sql.Record.
+func (u *User) Columns() []*sql.Field {
+	return []*sql.Field{
+		sql.NewField("id"),
+		sql.NewField("name"),
+		sql.NewField("email"),
+		sql.NewField("password_hash"),
+		sql.NewField("score"),
+		sql.NewField("is_active"),
+		sql.NewField("created_at"),
+		sql.NewField("updated_at"),
+	}
+}
+
+// ID implements sql.Record.
+func (u *User) ID() int64 {
+	return u.Id
+}
+
+// Scan implements sql.Record.
+func (u *User) Scan(row sql.Row) error {
+	return row.Scan(&u.Id, &u.Name, &u.Email, &u.PasswordHash, &u.Score, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
+}
+
+// SetID implements sql.Record.
+func (u *User) SetID(id int64) {
+	u.Id = id
+}
+
+// Table implements sql.Record.
+func (u *User) Table() *sql.Table {
+	return sql.NewTable("users")
+}
+
+// Values implements sql.Record.
+func (u *User) Values() []any {
+	return []any{u.Name, u.Email, u.PasswordHash, u.Score, u.IsActive, u.CreatedAt, u.UpdatedAt}
+}
+
+type Users struct {
+	User
+	Users []*User
+}
+
+func (u *Users) Scan(rows sql.Rows) error {
+	u.Users = make([]*User, 0)
+	for rows.Next() {
+		user := new(User)
+		if err := user.Scan(rows); err != nil {
+			return err
+		}
+		u.Users = append(u.Users, user)
+	}
+	return nil
+}
